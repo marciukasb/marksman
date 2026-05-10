@@ -75,7 +75,16 @@ export default function PostEditorPage() {
         await ensureDraftsBranch(project!.pat, project!.owner, project!.repo, 'master');
         branch = 'cms-drafts';
       }
-      await putFile(project!.pat, project!.owner, project!.repo, path, content, message, fileSha, branch);
+      let sha = fileSha;
+      if (isNew) {
+        try {
+          const existing = await fetchFile(project!.pat, project!.owner, project!.repo, path);
+          sha = existing.sha;
+        } catch {
+          // file doesn't exist yet, no sha needed
+        }
+      }
+      await putFile(project!.pat, project!.owner, project!.repo, path, content, message, sha, branch);
       navigate(`/${project!.owner}/${project!.repo}/${encodeURIComponent(activeCollection!.name)}`);
     } catch (err) {
       console.error('Save failed:', err);
