@@ -118,16 +118,19 @@ export async function fetchSyncStatus(
   branch = 'master',
 ): Promise<SyncStatus> {
   const octokit = client(pat);
-  const [{ data: commits }, { data: { workflow_runs } }] = await Promise.all([
-    octokit.repos.listCommits({ owner, repo, sha: branch, per_page: 1 }),
-    octokit.actions.listWorkflowRuns({ owner, repo, workflow_id: workflow, per_page: 10 }),
-  ]);
-  const latestSha = commits[0]?.sha;
-  if (!workflow_runs.length || !latestSha) return 'unsynced';
+  const { data: { workflow_runs } } = await octokit.actions.listWorkflowRuns({
+    owner, repo, workflow_id: workflow, per_page: 10,
+  });
   if (workflow_runs.some(r => r.status === 'in_progress' || r.status === 'queued')) return 'in_progress';
   const latestSuccess = workflow_runs.find(r => r.conclusion === 'success');
   if (!latestSuccess) return 'unsynced';
-  return latestSuccess.head_sha === latestSha ? 'synced' : 'unsynced';
+  // Compare commits between last deploy and HEAD — only CMS commits count as unsynced
+  const { data: comparison } = await octokit.repos.compareCommits({
+    owner, repo, base: latestSuccess.head_sha, head: branch,
+  });
+  if (comparison.ahead_by === 0) return 'synced';
+  const hasCmsCommits = comparison.commits.some(c => c.commit.message.startsWith('cms:'));
+  return hasCmsCommits ? 'unsynced' : 'synced';
 }
 
 export async function triggerDeploy(
