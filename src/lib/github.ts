@@ -108,6 +108,28 @@ export async function deleteFile(
   });
 }
 
+export type SyncStatus = 'synced' | 'unsynced' | 'in_progress' | 'unknown';
+
+export async function fetchSyncStatus(
+  pat: string,
+  owner: string,
+  repo: string,
+  workflow: string,
+  branch = 'master',
+): Promise<SyncStatus> {
+  const octokit = client(pat);
+  const [{ data: commits }, { data: { workflow_runs } }] = await Promise.all([
+    octokit.repos.listCommits({ owner, repo, sha: branch, per_page: 1 }),
+    octokit.actions.listWorkflowRuns({ owner, repo, workflow_id: workflow, per_page: 10 }),
+  ]);
+  const latestSha = commits[0]?.sha;
+  if (!workflow_runs.length || !latestSha) return 'unsynced';
+  if (workflow_runs.some(r => r.status === 'in_progress' || r.status === 'queued')) return 'in_progress';
+  const latestSuccess = workflow_runs.find(r => r.conclusion === 'success');
+  if (!latestSuccess) return 'unsynced';
+  return latestSuccess.head_sha === latestSha ? 'synced' : 'unsynced';
+}
+
 export async function triggerDeploy(
   pat: string,
   owner: string,

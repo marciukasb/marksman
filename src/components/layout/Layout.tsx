@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation, useMatch } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
-import { triggerDeploy } from '../../lib/github';
+import { triggerDeploy, fetchSyncStatus, type SyncStatus } from '../../lib/github';
 import styles from './Layout.module.scss';
 
 function usePageTitle() {
@@ -27,8 +27,26 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const pageTitle = usePageTitle();
   const [deploying, setDeploying] = useState(false);
   const [deployMsg, setDeployMsg] = useState('');
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('unknown');
 
   const showSidebar = !!project;
+
+  const refreshStatus = useCallback(async () => {
+    if (!project || !config?.deployWorkflow) return;
+    try {
+      const status = await fetchSyncStatus(project.pat, project.owner, project.repo, config.deployWorkflow);
+      setSyncStatus(status);
+    } catch {
+      setSyncStatus('unknown');
+    }
+  }, [project, config?.deployWorkflow]);
+
+  useEffect(() => {
+    if (!project || !config?.deployWorkflow) return;
+    refreshStatus();
+    const interval = setInterval(refreshStatus, 20_000);
+    return () => clearInterval(interval);
+  }, [refreshStatus]);
 
   async function handleDeploy() {
     if (!config?.deployWorkflow) {
@@ -38,13 +56,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
     setDeploying(true);
     setDeployMsg('');
+    setSyncStatus('in_progress');
     try {
       await triggerDeploy(project!.pat, project!.owner, project!.repo, config.deployWorkflow);
       setDeployMsg('Sync triggered.');
       setTimeout(() => setDeployMsg(''), 3000);
+      // Poll more eagerly right after triggering
+      setTimeout(refreshStatus, 5000);
     } catch {
       setDeployMsg('Failed — check PAT has workflow permissions.');
       setTimeout(() => setDeployMsg(''), 5000);
+      setSyncStatus('unknown');
     } finally {
       setDeploying(false);
     }
@@ -55,6 +77,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setActiveCollection(col);
     navigate(`/${project!.owner}/${project!.repo}/${encodeURIComponent(col.name)}`);
   }
+
+  const dotClass = {
+    synced: styles.dotSynced,
+    unsynced: styles.dotUnsynced,
+    in_progress: styles.dotInProgress,
+    unknown: styles.dotUnknown,
+  }[syncStatus];
 
   return (
     <div className={styles.shell}>
@@ -89,9 +118,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className={styles.topNavRight}>
             {deployMsg && <span className={styles.deployMsg}>{deployMsg}</span>}
             {showSidebar && (
-              <button className={styles.deployBtn} onClick={handleDeploy} disabled={deploying}>
-                {deploying ? 'Syncing…' : 'Sync'}
-              </button>
+              <div className={styles.syncWrap}>
+                <span className={`${styles.dot} ${dotClass}`} />
+                <button className={styles.deployBtn} onClick={handleDeploy} disabled={deploying}>
+                  {deploying ? 'Syncing…' : 'Sync'}
+                </button>
+              </div>
             )}
           </div>
         </header>
