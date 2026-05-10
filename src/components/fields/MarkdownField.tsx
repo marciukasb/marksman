@@ -67,7 +67,7 @@ export default function MarkdownField({ name, value, onChange, pat, owner, repo,
         onChange={v => onChange(v ?? '')}
         height={400}
         preview="live"
-        commands={[...commands.getCommands(), commands.divider, uploadImageCommand]}
+        commands={[...commands.getCommands().filter(c => c.name !== 'image'), commands.divider, uploadImageCommand]}
       />
       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
       {uploading && <span style={{ fontSize: '0.8rem', color: '#888' }}>Uploading image…</span>}
