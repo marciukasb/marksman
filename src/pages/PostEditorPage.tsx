@@ -18,6 +18,7 @@ export default function PostEditorPage() {
   const { project, activeCollection } = useProject();
   const { slug } = useParams<{ slug?: string }>();
   const navigate = useNavigate();
+  const isNew = !slug;
 
   const [values, setValues] = useState<Record<string, string>>(() => {
     if (!isNew || !activeCollection) return {};
@@ -30,8 +31,6 @@ export default function PostEditorPage() {
   const [loading, setLoading] = useState(!!slug);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-
-  const isNew = !slug;
 
   useEffect(() => {
     if (!project || !activeCollection) { navigate('/'); return; }
