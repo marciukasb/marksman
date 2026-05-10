@@ -11,9 +11,10 @@ interface Props {
   owner: string;
   repo: string;
   imageFolder: string;
+  imageUrlPrefix?: string;
 }
 
-export default function ImageField({ name, value, onChange, pat, owner, repo, imageFolder }: Props) {
+export default function ImageField({ name, value, onChange, pat, owner, repo, imageFolder, imageUrlPrefix }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -27,7 +28,7 @@ export default function ImageField({ name, value, onChange, pat, owner, repo, im
     reader.onload = async () => {
       try {
         const base64 = (reader.result as string).split(',')[1];
-        const path = await uploadImage(pat, owner, repo, imageFolder, file.name, base64);
+        const path = await uploadImage(pat, owner, repo, imageFolder, file.name, base64, imageUrlPrefix);
         onChange(path);
       } catch {
         setError('Upload failed.');
@@ -42,6 +43,11 @@ export default function ImageField({ name, value, onChange, pat, owner, repo, im
     reader.readAsDataURL(file);
   }
 
+  // Build a previewable URL via raw.githubusercontent.com so images load in the editor
+  const previewUrl = value
+    ? `https://raw.githubusercontent.com/${owner}/${repo}/master/${imageFolder}/${value.split('/').pop()}`
+    : null;
+
   return (
     <div className={styles.field}>
       <label className={styles.label}>{name}</label>
@@ -52,7 +58,7 @@ export default function ImageField({ name, value, onChange, pat, owner, repo, im
         </button>
       </div>
       <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
-      {value && <img src={value} alt="preview" className={imageStyles.preview} />}
+      {previewUrl && <img src={previewUrl} alt="preview" className={imageStyles.preview} />}
       {error && <span className={imageStyles.error}>{error}</span>}
     </div>
   );

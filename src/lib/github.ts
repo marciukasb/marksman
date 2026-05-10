@@ -69,6 +69,7 @@ export async function uploadImage(
   imageFolder: string,
   filename: string,
   base64Content: string,
+  imageUrlPrefix?: string,
 ): Promise<string> {
   const octokit = client(pat);
   const path = `${imageFolder}/${filename}`;
@@ -87,7 +88,7 @@ export async function uploadImage(
     content: base64Content,
     ...(sha ? { sha } : {}),
   });
-  return `/${path}`;
+  return imageUrlPrefix ? `${imageUrlPrefix}/${filename}` : `/${path}`;
 }
 
 export async function deleteFile(

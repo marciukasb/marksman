@@ -10,6 +10,7 @@ export interface CollectionConfig {
   name: string;
   folder: string;
   imageFolder: string;
+  imageUrlPrefix?: string;
   fields: FieldConfig[];
 }
 

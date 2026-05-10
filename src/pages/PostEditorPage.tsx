@@ -114,6 +114,7 @@ export default function PostEditorPage() {
           owner={project!.owner}
           repo={project!.repo}
           imageFolder={activeCollection!.imageFolder}
+          imageUrlPrefix={activeCollection!.imageUrlPrefix}
         />
       );
       case 'markdown': return <MarkdownField key={field.name} name={field.name} value={value} onChange={onChange} />;
