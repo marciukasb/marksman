@@ -138,10 +138,6 @@ export default function PostEditorPage() {
 
   return (
     <div className={styles.page}>
-      <button className={styles.back} onClick={() => navigate(`/${project.owner}/${project.repo}/${encodeURIComponent(activeCollection.name)}`)}>
-        ← {activeCollection.name}
-      </button>
-      <h1 className={styles.title}>{isNew ? 'New post' : 'Edit post'}</h1>
       {error && <p className={styles.error}>{error}</p>}
       {loading ? <Loader /> : (
         <>

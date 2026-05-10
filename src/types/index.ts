@@ -15,6 +15,7 @@ export interface CollectionConfig {
 }
 
 export interface CmsConfig {
+  deployWorkflow?: string;
   collections: CollectionConfig[];
 }
 

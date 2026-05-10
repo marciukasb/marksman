@@ -56,7 +56,6 @@ export default function ProjectsPage() {
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.title}>Marksman</h1>
       {error && <p className={styles.error}>{error}</p>}
 
       <ul className={styles.list}>

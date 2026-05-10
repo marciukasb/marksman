@@ -1,8 +1,7 @@
 @use '../styles/variables' as *;
 
-.page { max-width: 700px; margin: 60px auto; padding: 0 24px; }
-.back { background: none; border: none; color: $color-text-muted; cursor: pointer; margin-bottom: 24px; font-size: 0.9rem; }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.page { max-width: 700px; margin: 0 auto; padding: 32px 24px; }
+.header { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 24px; }
 .title { font-size: 1.8rem; }
 .error { color: $color-danger; margin-bottom: 16px; }
 .list { list-style: none; display: flex; flex-direction: column; gap: 10px; }

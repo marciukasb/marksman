@@ -108,6 +108,17 @@ export async function deleteFile(
   });
 }
 
+export async function triggerDeploy(
+  pat: string,
+  owner: string,
+  repo: string,
+  workflow: string,
+  branch = 'master',
+): Promise<void> {
+  const octokit = client(pat);
+  await octokit.actions.createWorkflowDispatch({ owner, repo, workflow_id: workflow, ref: branch });
+}
+
 export async function ensureDraftsBranch(
   pat: string,
   owner: string,

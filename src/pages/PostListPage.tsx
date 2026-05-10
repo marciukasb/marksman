@@ -70,9 +70,7 @@ export default function PostListPage() {
 
   return (
     <div className={styles.page}>
-      <button className={styles.back} onClick={() => navigate(`/${project.owner}/${project.repo}`)}>← {project.label}</button>
       <div className={styles.header}>
-        <h1 className={styles.title}>{activeCollection.name}</h1>
         <Button onClick={() => navigate(`/${project.owner}/${project.repo}/${encodeURIComponent(activeCollection.name)}/new`)}>
           + New post
         </Button>

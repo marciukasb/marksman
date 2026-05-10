@@ -1,8 +1,6 @@
 @use '../styles/variables' as *;
 
-.page { max-width: 800px; margin: 60px auto; padding: 0 24px 80px; }
-.back { background: none; border: none; color: $color-text-muted; cursor: pointer; margin-bottom: 24px; font-size: 0.9rem; }
-.title { font-size: 1.8rem; margin-bottom: 32px; }
+.page { max-width: 800px; margin: 0 auto; padding: 32px 24px 80px; }
 .error { color: $color-danger; margin-bottom: 16px; }
 .fields { display: flex; flex-direction: column; gap: 20px; }
 .actions { display: flex; gap: 12px; margin-top: 32px; padding-top: 24px; border-top: 1px solid $color-border; }
