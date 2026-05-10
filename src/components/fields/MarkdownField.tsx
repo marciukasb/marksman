@@ -68,6 +68,17 @@ export default function MarkdownField({ name, value, onChange, pat, owner, repo,
         height={400}
         preview="live"
         commands={[...commands.getCommands().filter(c => c.name !== 'image'), commands.divider, uploadImageCommand]}
+        previewOptions={{
+          components: {
+            img: ({ src, alt }: { src?: string; alt?: string }) => {
+              // Rewrite relative URLs so images load from the GitHub repo instead of this domain
+              const previewSrc = src?.startsWith('/')
+                ? `https://raw.githubusercontent.com/${owner}/${repo}/master/${imageFolder}/${src.split('/').pop()}`
+                : src;
+              return <img src={previewSrc} alt={alt ?? ''} style={{ maxWidth: '100%' }} />;
+            },
+          },
+        }}
       />
       <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
       {uploading && <span style={{ fontSize: '0.8rem', color: '#888' }}>Uploading image…</span>}
