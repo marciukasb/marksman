@@ -30,15 +30,19 @@ export default function PostListPage() {
     setLoading(true);
     try {
       const files = await listFiles(project!.pat, project!.owner, project!.repo, activeCollection!.folder);
-      const entries = await Promise.all(
+      const results = await Promise.allSettled(
         files.map(async file => {
           const { content } = await fetchFile(project!.pat, project!.owner, project!.repo, file.path);
           const { data } = parsePost(content);
           return { file, title: data.title ?? file.name, date: data.date ?? '' };
         })
       );
+      const entries = results
+        .filter((r): r is PromiseFulfilledResult<PostEntry> => r.status === 'fulfilled')
+        .map(r => r.value);
       setPosts(entries.sort((a, b) => b.date.localeCompare(a.date)));
-    } catch {
+    } catch (err) {
+      console.error('Failed to load posts:', err);
       setError('Failed to load posts.');
     } finally {
       setLoading(false);
