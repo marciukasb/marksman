@@ -121,7 +121,8 @@ export async function fetchSyncStatus(
   const { data: { workflow_runs } } = await octokit.actions.listWorkflowRuns({
     owner, repo, workflow_id: workflow, per_page: 10,
   });
-  if (workflow_runs.some(r => r.status === 'in_progress' || r.status === 'queued')) return 'in_progress';
+  const activeStatuses = ['queued', 'in_progress', 'waiting', 'requested', 'pending'];
+  if (workflow_runs.some(r => activeStatuses.includes(r.status ?? ''))) return 'in_progress';
   const latestSuccess = workflow_runs.find(r => r.conclusion === 'success');
   if (!latestSuccess) return 'unsynced';
   // Compare commits between last deploy and HEAD — only CMS commits count as unsynced

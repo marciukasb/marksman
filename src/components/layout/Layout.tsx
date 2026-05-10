@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation, useMatch } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
 import { triggerDeploy, fetchSyncStatus, fetchConfig, type SyncStatus } from '../../lib/github';
@@ -35,6 +35,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [deploying, setDeploying] = useState(false);
   const [deployMsg, setDeployMsg] = useState('');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('unknown');
+  const syncTriggeredAt = useRef<number | null>(null);
 
   const [projects, setProjects] = useState<Project[]>(getProjects);
   const [addingProject, setAddingProject] = useState(false);
@@ -48,6 +49,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     if (!project || !config?.deployWorkflow) return;
     try {
       const status = await fetchSyncStatus(project.pat, project.owner, project.repo, config.deployWorkflow);
+      // If we recently triggered a sync and the API hasn't registered the run yet,
+      // hold amber for up to 10 minutes rather than flashing red
+      if (status === 'unsynced' && syncTriggeredAt.current !== null) {
+        const elapsed = Date.now() - syncTriggeredAt.current;
+        if (elapsed < 10 * 60 * 1000) {
+          setSyncStatus('in_progress');
+          return;
+        }
+        syncTriggeredAt.current = null;
+      }
+      if (status === 'synced' || status === 'in_progress') {
+        syncTriggeredAt.current = null;
+      }
       setSyncStatus(status);
     } catch {
       setSyncStatus('unknown');
@@ -70,6 +84,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setDeploying(true);
     setDeployMsg('');
     setSyncStatus('in_progress');
+    syncTriggeredAt.current = Date.now();
     try {
       await triggerDeploy(project!.pat, project!.owner, project!.repo, config.deployWorkflow);
       setDeployMsg('Sync triggered.');
