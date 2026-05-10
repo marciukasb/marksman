@@ -1,0 +1,22 @@
+@use '../styles/variables' as *;
+
+.page { max-width: 700px; margin: 60px auto; padding: 0 24px; }
+.back { background: none; border: none; color: $color-text-muted; cursor: pointer; margin-bottom: 24px; font-size: 0.9rem; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.title { font-size: 1.8rem; }
+.error { color: $color-danger; margin-bottom: 16px; }
+.list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius;
+  padding: 14px 18px;
+}
+.itemInfo { display: flex; flex-direction: column; gap: 4px; }
+.itemTitle { font-weight: 500; }
+.itemDate { font-size: 0.8rem; color: $color-text-muted; }
+.itemActions { display: flex; gap: 8px; }
+.empty { color: $color-text-muted; }
