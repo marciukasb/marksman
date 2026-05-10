@@ -1,8 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation, useMatch } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
-import { triggerDeploy, fetchSyncStatus, type SyncStatus } from '../../lib/github';
+import { triggerDeploy, fetchSyncStatus, fetchConfig, type SyncStatus } from '../../lib/github';
+import { getProjects, saveProject } from '../../lib/storage';
+import type { Project } from '../../types';
 import styles from './Layout.module.scss';
+
+function generateId() {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 function usePageTitle() {
   const { project, activeCollection } = useProject();
@@ -21,13 +27,20 @@ function usePageTitle() {
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const { project, config, activeCollection, setActiveCollection, clearProject } = useProject();
+  const { project, config, activeCollection, setActiveCollection, setProject } = useProject();
   const navigate = useNavigate();
   const location = useLocation();
   const pageTitle = usePageTitle();
+
   const [deploying, setDeploying] = useState(false);
   const [deployMsg, setDeployMsg] = useState('');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('unknown');
+
+  const [projects, setProjects] = useState<Project[]>(getProjects);
+  const [addingProject, setAddingProject] = useState(false);
+  const [form, setForm] = useState({ label: '', owner: '', repo: '', pat: '' });
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState('');
 
   const showSidebar = !!project;
 
@@ -61,7 +74,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       await triggerDeploy(project!.pat, project!.owner, project!.repo, config.deployWorkflow);
       setDeployMsg('Sync triggered.');
       setTimeout(() => setDeployMsg(''), 3000);
-      // Poll more eagerly right after triggering
       setTimeout(refreshStatus, 5000);
     } catch {
       setDeployMsg('Failed — check PAT has workflow permissions.');
@@ -69,6 +81,32 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setSyncStatus('unknown');
     } finally {
       setDeploying(false);
+    }
+  }
+
+  async function handleSwitchProject(p: Project) {
+    const cfg = await fetchConfig(p.pat, p.owner, p.repo);
+    setProject(p, cfg);
+    navigate(`/${p.owner}/${p.repo}`);
+  }
+
+  async function handleAddProject(e: React.FormEvent) {
+    e.preventDefault();
+    setAddLoading(true);
+    setAddError('');
+    const newProject: Project = { id: generateId(), ...form };
+    try {
+      const cfg = await fetchConfig(newProject.pat, newProject.owner, newProject.repo);
+      saveProject(newProject);
+      setProjects(getProjects());
+      setProject(newProject, cfg);
+      setAddingProject(false);
+      setForm({ label: '', owner: '', repo: '', pat: '' });
+      navigate(`/${newProject.owner}/${newProject.repo}`);
+    } catch {
+      setAddError('Could not connect. Check repo name, PAT, and that .cms.json exists.');
+    } finally {
+      setAddLoading(false);
     }
   }
 
@@ -105,10 +143,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-          <div className={styles.sidebarFooter}>
-            <button className={styles.backBtn} onClick={() => { clearProject(); navigate('/'); }}>
-              ← All projects
-            </button>
+
+          <div className={styles.sidebarSection}>
+            <span className={styles.sectionLabel}>Projects</span>
+            {projects.map(p => (
+              <button
+                key={p.id}
+                className={`${styles.navItem} ${p.id === project?.id ? styles.navItemActive : ''}`}
+                onClick={() => p.id !== project?.id && handleSwitchProject(p)}
+              >
+                {p.label}
+              </button>
+            ))}
+
+            {addingProject ? (
+              <form className={styles.addForm} onSubmit={handleAddProject}>
+                <input required placeholder="Label" value={form.label} onChange={e => setForm(f => ({ ...f, label: e.target.value }))} />
+                <input required placeholder="Owner" value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} />
+                <input required placeholder="Repo" value={form.repo} onChange={e => setForm(f => ({ ...f, repo: e.target.value }))} />
+                <input required type="password" placeholder="PAT" value={form.pat} onChange={e => setForm(f => ({ ...f, pat: e.target.value }))} />
+                {addError && <span className={styles.addError}>{addError}</span>}
+                <div className={styles.addActions}>
+                  <button type="submit" className={styles.addSubmit} disabled={addLoading}>{addLoading ? 'Connecting…' : 'Connect'}</button>
+                  <button type="button" className={styles.addCancel} onClick={() => { setAddingProject(false); setAddError(''); }}>Cancel</button>
+                </div>
+              </form>
+            ) : (
+              <button className={styles.addProjectBtn} onClick={() => setAddingProject(true)}>+ Add project</button>
+            )}
           </div>
         </aside>
       )}

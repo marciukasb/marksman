@@ -55,13 +55,24 @@ $topnav-height: 52px;
   color: $color-text;
 }
 
-.sidebarFooter {
-  padding: 10px 8px;
+.sidebarSection {
   border-top: 1px solid $color-border;
-  flex-shrink: 0;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.backBtn {
+.sectionLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: $color-text-muted;
+  padding: 0 12px;
+  margin-bottom: 4px;
+}
+
+.addProjectBtn {
   width: 100%;
   text-align: left;
   background: none;
@@ -70,7 +81,56 @@ $topnav-height: 52px;
   padding: 8px 12px;
   border-radius: $radius;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
+  margin-top: 2px;
+  &:hover { color: $color-accent; }
+}
+
+.addForm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 4px 4px;
+
+  input {
+    background: $color-bg;
+    border: 1px solid $color-border;
+    color: $color-text;
+    padding: 6px 10px;
+    border-radius: $radius;
+    font-size: 0.8rem;
+    outline: none;
+    width: 100%;
+    &:focus { border-color: $color-accent; }
+  }
+}
+
+.addError { font-size: 0.75rem; color: $color-danger; }
+
+.addActions { display: flex; gap: 6px; margin-top: 2px; }
+
+.addSubmit {
+  flex: 1;
+  background: $color-accent;
+  color: #0f0f0f;
+  border: none;
+  border-radius: $radius;
+  padding: 6px 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.addCancel {
+  flex: 1;
+  background: none;
+  border: 1px solid $color-border;
+  color: $color-text-muted;
+  border-radius: $radius;
+  padding: 6px 0;
+  font-size: 0.8rem;
+  cursor: pointer;
   &:hover { color: $color-text; }
 }
 
