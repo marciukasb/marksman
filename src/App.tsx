@@ -1,35 +1,22 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { HashRouter, Routes, Route } from 'react-router-dom';
+import { ProjectProvider } from './context/ProjectContext';
+import ProjectsPage from './pages/ProjectsPage';
+import CollectionsPage from './pages/CollectionsPage';
+import PostListPage from './pages/PostListPage';
+import PostEditorPage from './pages/PostEditorPage';
 
-function App() {
-  const [count, setCount] = useState(0)
-
+export default function App() {
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <ProjectProvider>
+      <HashRouter>
+        <Routes>
+          <Route path="/" element={<ProjectsPage />} />
+          <Route path="/:owner/:repo" element={<CollectionsPage />} />
+          <Route path="/:owner/:repo/:collection" element={<PostListPage />} />
+          <Route path="/:owner/:repo/:collection/new" element={<PostEditorPage />} />
+          <Route path="/:owner/:repo/:collection/edit/:slug" element={<PostEditorPage />} />
+        </Routes>
+      </HashRouter>
+    </ProjectProvider>
+  );
 }
-
-export default App
