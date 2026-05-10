@@ -30,6 +30,7 @@ export default function PostListPage() {
     setLoading(true);
     try {
       const files = await listFiles(project!.pat, project!.owner, project!.repo, activeCollection!.folder);
+      console.log('files found:', files);
       const results = await Promise.allSettled(
         files.map(async file => {
           const { content } = await fetchFile(project!.pat, project!.owner, project!.repo, file.path);
@@ -37,6 +38,7 @@ export default function PostListPage() {
           return { file, title: data.title ?? file.name, date: data.date ?? '' };
         })
       );
+      results.forEach((r, i) => { if (r.status === 'rejected') console.error(`file ${files[i].name} failed:`, r.reason); });
       const entries = results
         .filter((r): r is PromiseFulfilledResult<PostEntry> => r.status === 'fulfilled')
         .map(r => r.value);
