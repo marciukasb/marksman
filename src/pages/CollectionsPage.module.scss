@@ -1,0 +1,18 @@
+@use '../styles/variables' as *;
+
+.page { max-width: 600px; margin: 60px auto; padding: 0 24px; }
+.back { background: none; border: none; color: $color-text-muted; cursor: pointer; margin-bottom: 24px; font-size: 0.9rem; }
+.title { font-size: 1.8rem; margin-bottom: 24px; }
+.list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.item {
+  width: 100%;
+  text-align: left;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius;
+  padding: 16px 20px;
+  color: $color-text;
+  cursor: pointer;
+  font-size: 1rem;
+  &:hover { border-color: $color-accent; }
+}
