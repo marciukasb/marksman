@@ -31,11 +31,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const showSidebar = !!project;
 
   async function handleDeploy() {
+    if (!config?.deployWorkflow) {
+      setDeployMsg('Add "deployWorkflow" to .cms.json to enable sync.');
+      setTimeout(() => setDeployMsg(''), 5000);
+      return;
+    }
     setDeploying(true);
     setDeployMsg('');
     try {
-      await triggerDeploy(project!.pat, project!.owner, project!.repo, config!.deployWorkflow!);
-      setDeployMsg('Triggered.');
+      await triggerDeploy(project!.pat, project!.owner, project!.repo, config.deployWorkflow);
+      setDeployMsg('Sync triggered.');
       setTimeout(() => setDeployMsg(''), 3000);
     } catch {
       setDeployMsg('Failed — check PAT has workflow permissions.');
@@ -83,9 +88,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <span className={styles.pageTitle}>{pageTitle}</span>
           <div className={styles.topNavRight}>
             {deployMsg && <span className={styles.deployMsg}>{deployMsg}</span>}
-            {config?.deployWorkflow && (
+            {showSidebar && (
               <button className={styles.deployBtn} onClick={handleDeploy} disabled={deploying}>
-                {deploying ? 'Deploying…' : 'Publish'}
+                {deploying ? 'Syncing…' : 'Sync'}
               </button>
             )}
           </div>
