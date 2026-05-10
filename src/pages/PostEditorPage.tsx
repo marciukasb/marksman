@@ -77,8 +77,10 @@ export default function PostEditorPage() {
       }
       await putFile(project!.pat, project!.owner, project!.repo, path, content, message, fileSha, branch);
       navigate(`/${project!.owner}/${project!.repo}/${encodeURIComponent(activeCollection!.name)}`);
-    } catch {
-      setError('Failed to save. Check your PAT permissions.');
+    } catch (err) {
+      console.error('Save failed:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Failed to save: ${msg}`);
     } finally {
       setSaving(false);
     }
