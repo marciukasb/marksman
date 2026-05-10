@@ -19,7 +19,13 @@ export default function PostEditorPage() {
   const { slug } = useParams<{ slug?: string }>();
   const navigate = useNavigate();
 
-  const [values, setValues] = useState<Record<string, string>>({});
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    if (!isNew || !activeCollection) return {};
+    const today = new Date().toISOString().slice(0, 10);
+    return Object.fromEntries(
+      activeCollection.fields.filter(f => f.type === 'date').map(f => [f.name, today])
+    );
+  });
   const [fileSha, setFileSha] = useState<string | undefined>();
   const [loading, setLoading] = useState(!!slug);
   const [saving, setSaving] = useState(false);
