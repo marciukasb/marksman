@@ -54,3 +54,12 @@ export async function savePhoto(photo: LocalPhoto): Promise<void> {
 }
 
 export const removePhoto = (projectId: string, url: string) => del(photoKey(projectId, url), photoStore);
+
+// Unsynced posts and photos live only in this browser; ask it not to clear them when space runs low
+export async function keepWorkSafe(): Promise<void> {
+  try {
+    await navigator.storage?.persist?.();
+  } catch {
+    // Not supported or refused; work is still saved, just not protected
+  }
+}

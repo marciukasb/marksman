@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { clear, createStore } from 'idb-keyval';
 import type { LocalEntry } from '../types';
 import {
   entryKey, getEntry, listEntries, removeEntry, saveEntry, workspaceId,
-  getPhoto, listPhotos, removePhoto, savePhoto,
+  getPhoto, listPhotos, removePhoto, savePhoto, keepWorkSafe,
 } from './workspace';
 
 const entry = (projectId: string, path: string): LocalEntry => ({
@@ -69,5 +69,21 @@ describe('photos', () => {
 describe('workspaceId', () => {
   it('is the lowercased owner/repo, independent of the project id', () => {
     expect(workspaceId({ id: 'x1', label: 'L', owner: 'MarciukasB', repo: 'GycioBiciukis', pat: 't' })).toBe('marciukasb/gyciobiciukis');
+  });
+});
+
+describe('keepWorkSafe', () => {
+  it('asks the browser not to clear saved work', async () => {
+    const persist = vi.fn().mockResolvedValue(true);
+    vi.stubGlobal('navigator', { storage: { persist } });
+    await keepWorkSafe();
+    expect(persist).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it('does nothing where the browser cannot', async () => {
+    vi.stubGlobal('navigator', {});
+    await expect(keepWorkSafe()).resolves.toBeUndefined();
+    vi.unstubAllGlobals();
   });
 });

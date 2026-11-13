@@ -11,8 +11,11 @@ function unquote(value: string): string {
   return value;
 }
 
+// Leading zeros (007) would be lost as a number, so those stay text
+const PLAIN_NUMBER = /^-?(0|[1-9]\d*)(\.\d+)?$/;
+
 function parseScalar(value: string): string | number {
-  if (NUMBER.test(value)) return Number(value);
+  if (PLAIN_NUMBER.test(value)) return Number(value);
   return unquote(value);
 }
 

@@ -30,7 +30,11 @@ export async function processPhoto(file: Blob): Promise<Blob> {
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, width, height);
+  const ctx = canvas.getContext('2d')!;
+  // JPEG has no transparency; without this, transparent PNG areas come out black
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(bitmap, 0, 0, width, height);
   bitmap.close();
   return new Promise((resolve, reject) => {
     canvas.toBlob(blob => (blob ? resolve(blob) : reject(new Error('Could not read this photo'))), 'image/jpeg', JPEG_QUALITY);

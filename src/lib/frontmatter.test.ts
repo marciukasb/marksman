@@ -73,6 +73,10 @@ describe('numbers', () => {
     expect(serializePost({ aviliai: 24 }, '')).toContain('aviliai: 24');
   });
 
+  it('keeps a number with leading zeros as written', () => {
+    expect(parsePost('---\ncode: 007\n---\n').data.code).toBe('007');
+  });
+
   it('keeps a quoted number as a string', () => {
     expect(parsePost('---\ntitle: "2025"\n---\n').data.title).toBe('2025');
   });

@@ -7,7 +7,7 @@ import { parsePost } from '../../lib/frontmatter';
 import { slugify, uniqueSlug } from '../../lib/slug';
 import { referencedPhotos } from '../../lib/photos';
 import { fieldLabel } from '../../lib/config';
-import { entryKey, getEntry, saveEntry, workspaceId } from '../../lib/workspace';
+import { entryKey, getEntry, keepWorkSafe, saveEntry, workspaceId } from '../../lib/workspace';
 import Button from '../ui/Button';
 import Loader from '../ui/Loader';
 import TextField from '../fields/TextField';
@@ -77,7 +77,16 @@ export default function EntryEditor({ kind, scope, fields, imageFolder, imageUrl
         const dates = Object.fromEntries(fields.filter(f => f.type === 'date').map(f => [f.name, today()]));
         return finish(dates, '', { path: null, slug: null, baseSha: null, livePhotos: [] });
       }
-      const local = await getEntry(entryKey(workspaceId(project), existingPath));
+      let local;
+      try {
+        local = await getEntry(entryKey(workspaceId(project), existingPath));
+      } catch {
+        if (!cancelled) {
+          setError("Couldn't read saved work on this computer. Try reloading the page.");
+          setLoading(false);
+        }
+        return;
+      }
       if (local) {
         return finish(local.data, local.body, { path: local.path, slug: local.slug, baseSha: local.baseSha, livePhotos: local.livePhotos });
       }
@@ -150,7 +159,10 @@ export default function EntryEditor({ kind, scope, fields, imageFolder, imageUrl
 
   async function newPostPath(): Promise<{ path: string; slug: string }> {
     const base = slugify(String(data.title ?? ''), today());
-    const live = (await listFiles(project!.pat, project!.owner, project!.repo, newPostFolder!)).map(f => f.name.replace(/\.md$/, ''));
+    // Offline, only local names are checked; a clash with GitHub shows up as a conflict at Sync
+    const live = await listFiles(project!.pat, project!.owner, project!.repo, newPostFolder!)
+      .then(files => files.map(f => f.name.replace(/\.md$/, '')))
+      .catch(() => [] as string[]);
     const local = entries.filter(e => e.scope === scope && e.slug).map(e => e.slug!);
     const slug = uniqueSlug(base, new Set([...live, ...local]));
     return { path: `${newPostFolder}/${slug}.md`, slug };
@@ -176,6 +188,7 @@ export default function EntryEditor({ kind, scope, fields, imageFolder, imageUrl
         body,
         updatedAt: Date.now(),
       });
+      void keepWorkSafe();
       leaving.current = true;
       await refresh();
       onDone();

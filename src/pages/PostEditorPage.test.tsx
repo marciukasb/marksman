@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { clear, createStore } from 'idb-keyval';
 import App from '../App';
 import { listEntries, saveEntry, entryKey } from '../lib/workspace';
+import * as workspace from '../lib/workspace';
 import * as github from '../lib/github';
 import type { CmsConfig } from '../types';
 
@@ -11,6 +12,11 @@ let finishPhoto: (blob: Blob) => void = () => {};
 vi.mock('../lib/photos', async importOriginal => {
   const actual = await importOriginal<typeof import('../lib/photos')>();
   return { ...actual, processPhoto: vi.fn(() => new Promise<Blob>(resolve => { finishPhoto = resolve; })) };
+});
+
+vi.mock('../lib/workspace', async importOriginal => {
+  const actual = await importOriginal<typeof import('../lib/workspace')>();
+  return { ...actual, getEntry: vi.fn(actual.getEntry) };
 });
 
 vi.mock('../lib/github', async importOriginal => {
@@ -119,6 +125,21 @@ describe('post editor', () => {
     finishPhoto(new Blob(['jpg'], { type: 'image/jpeg' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Submit' })).toBeEnabled());
     expect(screen.getAllByRole('img', { name: /Photo 1/ })).toHaveLength(1);
+  });
+
+  it('saves a new post without internet', async () => {
+    vi.mocked(github.listFiles).mockRejectedValueOnce(new Error('Failed to fetch'));
+    openAt('#/o/r/%C4%AEra%C5%A1ai/new');
+    fireEvent.change(await screen.findByLabelText('title'), { target: { value: 'Be interneto' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+    await waitFor(async () => expect(await listEntries('o/r')).toHaveLength(1));
+    expect((await listEntries('o/r'))[0]).toMatchObject({ slug: 'be-interneto', state: 'draft' });
+  });
+
+  it('shows an error instead of spinning when this computer cannot read saved work', async () => {
+    vi.mocked(workspace.getEntry).mockRejectedValueOnce(new Error('IndexedDB unavailable'));
+    openAt('#/o/r/%C4%AEra%C5%A1ai/edit/medus');
+    expect(await screen.findByText(/Couldn't read saved work on this computer/)).toBeInTheDocument();
   });
 
   it('does not show Sync while editing', async () => {

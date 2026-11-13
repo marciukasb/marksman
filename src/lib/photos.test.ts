@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import type { FieldConfig } from '../types';
-import { fitWithin, photoFilename, randomSuffix, photoUrlToPath, referencedPhotos, galleryOutsideBody } from './photos';
+import { fitWithin, photoFilename, randomSuffix, photoUrlToPath, referencedPhotos, galleryOutsideBody, processPhoto } from './photos';
 
 const fields: FieldConfig[] = [
   { name: 'thumbnail', type: 'image' },
@@ -61,5 +61,23 @@ describe('referencedPhotos', () => {
 describe('galleryOutsideBody', () => {
   it('drops photos already placed in the text', () => {
     expect(galleryOutsideBody(['/images/a.jpg', '/images/b.jpg'], '![x](/images/b.jpg)')).toEqual(['/images/a.jpg']);
+  });
+});
+
+describe('processPhoto', () => {
+  it('paints a white background so transparent PNGs do not turn black', async () => {
+    const calls: string[] = [];
+    const ctx = {
+      set fillStyle(v: string) { calls.push(`fillStyle ${v}`); },
+      fillRect: () => calls.push('fillRect'),
+      drawImage: () => calls.push('drawImage'),
+    };
+    vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue({ width: 10, height: 10, close: () => {} }));
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(cb => cb(new Blob(['j'], { type: 'image/jpeg' })));
+    await processPhoto(new Blob(['png'], { type: 'image/png' }));
+    expect(calls).toEqual(['fillStyle #fff', 'fillRect', 'drawImage']);
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 });
