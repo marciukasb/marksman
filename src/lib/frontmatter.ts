@@ -17,9 +17,10 @@ function parseScalar(value: string): string | number {
 }
 
 export function parsePost(raw: string): { data: Record<string, FieldValue>; body: string } {
-  const match = raw.match(/^---\r?\n([\s\S]*?)\r?\n?---\r?\n?([\s\S]*)$/);
+  // The closing --- must sit on its own line; empty front matter (---\n---) has no YAML group
+  const match = raw.match(/^---\r?\n(?:([\s\S]*?)\r?\n)?---(?:\r?\n|$)([\s\S]*)$/);
   if (!match) return { data: {}, body: raw };
-  const [, yaml, body] = match;
+  const [, yaml = '', body] = match;
   const data: Record<string, FieldValue> = {};
   let listKey: string | null = null;
   // Keys written as `key:` with nothing after; they become lists only if items follow

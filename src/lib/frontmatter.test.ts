@@ -91,3 +91,14 @@ describe('Ember round-trip', () => {
     expect(parsePost(serializePost(first.data, first.body))).toEqual(first);
   });
 });
+
+describe('dashes inside values', () => {
+  it('keeps --- inside a title as part of the title', () => {
+    const raw = serializePost({ title: 'Before --- after' }, 'Body');
+    expect(parsePost(raw)).toEqual({ data: { title: 'Before --- after' }, body: 'Body' });
+  });
+
+  it('parses empty front matter', () => {
+    expect(parsePost('---\n---\n\nBody')).toEqual({ data: {}, body: 'Body' });
+  });
+});
