@@ -23,7 +23,7 @@ vi.mock('../lib/sync', async importOriginal => {
     ...actual,
     // Stands in for a successful Sync: the entry goes out and GitHub now has the file
     runSync: vi.fn(async () => {
-      await removeEntry(entryKey('p1', 'app/_data/_blog/medus.md'));
+      await removeEntry(entryKey('o/r', 'app/_data/_blog/medus.md'));
       vi.mocked(github.listFiles).mockResolvedValue([{ name: 'medus.md', path: 'app/_data/_blog/medus.md', sha: 's1' }]);
       vi.mocked(github.fetchFile).mockResolvedValue({ content: '---\ntitle: Medus\ndate: "2026-11-13"\n---\n\nT', sha: 's1' });
       return { commitSha: 'c1' };
@@ -45,9 +45,24 @@ beforeEach(async () => {
 });
 
 describe('post list', () => {
+  it('finds unsynced work after the project is re-added with a new id', async () => {
+    await saveEntry({
+      key: entryKey('o/r', 'app/_data/_blog/juodrastis.md'), projectId: 'o/r', kind: 'post', scope: 'Įrašai',
+      path: 'app/_data/_blog/juodrastis.md', slug: 'juodrastis', state: 'draft', baseSha: null, livePhotos: [],
+      data: { title: 'Juodraštis', date: '2026-11-12' }, body: 'T', updatedAt: 1,
+    });
+    sessionStorage.setItem('marksman:session', JSON.stringify({
+      project: { id: 'brand-new-id', label: 'B', owner: 'o', repo: 'r', pat: 'new-token' },
+      config, repoInfo: { defaultBranch: 'master' }, activeCollection: config.collections[0],
+    }));
+    window.location.hash = '#/o/r/%C4%AEra%C5%A1ai';
+    render(<App />);
+    expect(await screen.findByText('Juodraštis')).toBeInTheDocument();
+  });
+
   it('reloads from GitHub after a Sync so a published post shows as Live', async () => {
     await saveEntry({
-      key: entryKey('p1', 'app/_data/_blog/medus.md'), projectId: 'p1', kind: 'post', scope: 'Įrašai',
+      key: entryKey('o/r', 'app/_data/_blog/medus.md'), projectId: 'o/r', kind: 'post', scope: 'Įrašai',
       path: 'app/_data/_blog/medus.md', slug: 'medus', state: 'submitted', baseSha: null, livePhotos: [],
       data: { title: 'Medus', date: '2026-11-13' }, body: 'T', updatedAt: 1,
     });

@@ -68,8 +68,8 @@ describe('post editor', () => {
     openAt('#/o/r/%C4%AEra%C5%A1ai/new');
     fireEvent.change(await screen.findByLabelText('title'), { target: { value: 'Šablonas' } });
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
-    await waitFor(async () => expect(await listEntries('p1')).toHaveLength(1));
-    const [entry] = await listEntries('p1');
+    await waitFor(async () => expect(await listEntries('o/r')).toHaveLength(1));
+    const [entry] = await listEntries('o/r');
     expect(entry).toMatchObject({ slug: 'sablonas', state: 'submitted', baseSha: null, path: 'app/_data/_blog/sablonas.md' });
     expect(entry.data.title).toBe('Šablonas');
   });
@@ -78,12 +78,12 @@ describe('post editor', () => {
     openAt('#/o/r/%C4%AEra%C5%A1ai/new');
     fireEvent.change(await screen.findByLabelText('title'), { target: { value: 'Juodraštis' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
-    await waitFor(async () => expect((await listEntries('p1'))[0]?.state).toBe('draft'));
+    await waitFor(async () => expect((await listEntries('o/r'))[0]?.state).toBe('draft'));
   });
 
   it('keeps the slug when an existing post is renamed', async () => {
     await saveEntry({
-      key: entryKey('p1', 'app/_data/_blog/medus.md'), projectId: 'p1', kind: 'post', scope: 'Įrašai',
+      key: entryKey('o/r', 'app/_data/_blog/medus.md'), projectId: 'o/r', kind: 'post', scope: 'Įrašai',
       path: 'app/_data/_blog/medus.md', slug: 'medus', state: 'draft', baseSha: 's1', livePhotos: [],
       data: { title: 'Medus' }, body: 'x', updatedAt: 1,
     });
@@ -92,8 +92,8 @@ describe('post editor', () => {
     await waitFor(() => expect(title).toHaveValue('Medus'));
     fireEvent.change(title, { target: { value: 'Pavasario medus' } });
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
-    await waitFor(async () => expect((await listEntries('p1'))[0]?.state).toBe('submitted'));
-    const [entry] = await listEntries('p1');
+    await waitFor(async () => expect((await listEntries('o/r'))[0]?.state).toBe('submitted'));
+    const [entry] = await listEntries('o/r');
     expect(entry).toMatchObject({ slug: 'medus', path: 'app/_data/_blog/medus.md', baseSha: 's1' });
   });
 
@@ -105,8 +105,8 @@ describe('post editor', () => {
     openAt('#/o/r/%C4%AEra%C5%A1ai/edit/gaudykle');
     await waitFor(() => expect(screen.getByLabelText('title')).toHaveValue('Gaudyklė'));
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
-    await waitFor(async () => expect(await listEntries('p1')).toHaveLength(1));
-    expect((await listEntries('p1'))[0]).toMatchObject({ baseSha: 'live1', livePhotos: ['/images/g.jpg'], body: 'Tekstas' });
+    await waitFor(async () => expect(await listEntries('o/r')).toHaveLength(1));
+    expect((await listEntries('o/r'))[0]).toMatchObject({ baseSha: 'live1', livePhotos: ['/images/g.jpg'], body: 'Tekstas' });
   });
 
   it('blocks Submit and Save draft while photos are being prepared', async () => {

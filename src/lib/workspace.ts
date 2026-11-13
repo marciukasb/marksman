@@ -1,9 +1,12 @@
 import { createStore, del, entries, get, set } from 'idb-keyval';
-import type { LocalEntry, LocalPhoto } from '../types';
+import type { LocalEntry, LocalPhoto, Project } from '../types';
 
 // Unsynced work lives in this browser's IndexedDB until Sync sends it to GitHub
 const entryStore = createStore('marksman-entries', 'entries');
 const photoStore = createStore('marksman-photos', 'photos');
+
+// Unsynced work belongs to the repo, not to a saved project, so re-adding a project (e.g. with a new token) finds it again
+export const workspaceId = (project: Project) => `${project.owner}/${project.repo}`.toLowerCase();
 
 export const entryKey = (projectId: string, path: string) => `${projectId}:${path}`;
 const photoKey = (projectId: string, url: string) => `${projectId}:${url}`;

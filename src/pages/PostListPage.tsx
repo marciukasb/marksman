@@ -6,7 +6,7 @@ import { listFiles, fetchFile } from '../lib/github';
 import { parsePost } from '../lib/frontmatter';
 import { referencedPhotos } from '../lib/photos';
 import { mergeListing, type ListingRow } from '../lib/listing';
-import { entryKey, removeEntry, removePhoto, saveEntry } from '../lib/workspace';
+import { entryKey, removeEntry, removePhoto, saveEntry, workspaceId } from '../lib/workspace';
 import Button from '../components/ui/Button';
 import Loader from '../components/ui/Loader';
 import styles from './PostListPage.module.scss';
@@ -71,8 +71,8 @@ export default function PostListPage() {
     const post = live.find(p => p.path === row.path)!;
     const existing = scoped.find(e => e.path === row.path);
     await saveEntry({
-      key: entryKey(project!.id, row.path),
-      projectId: project!.id,
+      key: entryKey(workspaceId(project!), row.path),
+      projectId: workspaceId(project!),
       kind: 'post',
       scope: activeCollection!.name,
       path: row.path,
@@ -97,7 +97,7 @@ export default function PostListPage() {
       scoped.filter(e => e.key !== entry.key).flatMap(e => referencedPhotos(e.data, e.body, activeCollection!.fields)),
     );
     for (const url of referencedPhotos(entry.data, entry.body, activeCollection!.fields)) {
-      if (!stillUsed.has(url) && !entry.livePhotos.includes(url)) await removePhoto(project!.id, url);
+      if (!stillUsed.has(url) && !entry.livePhotos.includes(url)) await removePhoto(workspaceId(project!), url);
     }
     await refresh();
   }

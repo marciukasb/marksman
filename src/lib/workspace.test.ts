@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { clear, createStore } from 'idb-keyval';
 import type { LocalEntry } from '../types';
 import {
-  entryKey, getEntry, listEntries, removeEntry, saveEntry,
+  entryKey, getEntry, listEntries, removeEntry, saveEntry, workspaceId,
   getPhoto, listPhotos, removePhoto, savePhoto,
 } from './workspace';
 
@@ -63,5 +63,11 @@ describe('photos', () => {
     expect((await listPhotos('a')).map(p => p.url)).toEqual(['/images/a.jpg']);
     await removePhoto('a', '/images/a.jpg');
     expect(await listPhotos('a')).toEqual([]);
+  });
+});
+
+describe('workspaceId', () => {
+  it('is the lowercased owner/repo, independent of the project id', () => {
+    expect(workspaceId({ id: 'x1', label: 'L', owner: 'MarciukasB', repo: 'GycioBiciukis', pat: 't' })).toBe('marciukasb/gyciobiciukis');
   });
 });

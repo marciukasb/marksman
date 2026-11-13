@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProjects, saveProject, deleteProject } from '../lib/storage';
+import { listEntries, workspaceId } from '../lib/workspace';
 import { openProject } from '../lib/github';
 import { describeOpenError } from '../lib/config';
 import { useProject } from '../context/ProjectContext';
@@ -50,8 +51,13 @@ export default function ProjectsPage() {
     }
   }
 
-  function handleDelete(id: string) {
-    deleteProject(id);
+  async function handleDelete(project: Project) {
+    const waiting = (await listEntries(workspaceId(project))).length;
+    const note = waiting > 0
+      ? `\n\n${waiting} unsynced post(s) stay saved on this computer and come back when you add this repo again.`
+      : '';
+    if (!confirm(`Remove ${project.label}?${note}`)) return;
+    deleteProject(project.id);
     setProjects(getProjects());
   }
 
@@ -66,7 +72,7 @@ export default function ProjectsPage() {
               <span>{p.label}</span>
               <span className={styles.itemRepo}>{p.owner}/{p.repo}</span>
             </button>
-            <Button variant="danger" onClick={() => handleDelete(p.id)}>Remove</Button>
+            <Button variant="danger" onClick={() => handleDelete(p)}>Remove</Button>
           </li>
         ))}
       </ul>

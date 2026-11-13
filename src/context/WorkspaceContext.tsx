@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { LocalEntry } from '../types';
 import { useProject } from './ProjectContext';
-import { listEntries, listPhotos, removeEntry, saveEntry, savePhoto } from '../lib/workspace';
+import { listEntries, listPhotos, removeEntry, saveEntry, savePhoto, workspaceId } from '../lib/workspace';
 import { photoFilename, photoUrlToPath, processPhoto, randomSuffix } from '../lib/photos';
 import { fetchDeployInfo, fetchRunForCommit, fetchTreeShas } from '../lib/github';
 import { runSync, SyncConflictError, type Conflict } from '../lib/sync';
@@ -57,7 +57,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   // Object URLs for photos that only exist in this browser so far
   const [localSrc, setLocalSrc] = useState<Map<string, string>>(new Map());
 
-  const projectId = project?.id ?? null;
+  const projectId = project ? workspaceId(project) : null;
   const workflow = config?.deployWorkflow;
 
   const refresh = useCallback(async () => {
@@ -175,11 +175,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         owner: project.owner,
         repo: project.repo,
         branch: repoInfo.defaultBranch,
-        projectId: project.id,
+        projectId: workspaceId(project),
         config,
       });
       const next = { sha: commitSha, at: Date.now() };
-      localStorage.setItem(lastSyncKey(project.id), JSON.stringify(next));
+      localStorage.setItem(lastSyncKey(workspaceId(project)), JSON.stringify(next));
       setLastSync(next);
       setSyncCount(c => c + 1);
       setRun(null);

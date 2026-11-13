@@ -7,7 +7,7 @@ import { parsePost } from '../../lib/frontmatter';
 import { slugify, uniqueSlug } from '../../lib/slug';
 import { referencedPhotos } from '../../lib/photos';
 import { fieldLabel } from '../../lib/config';
-import { entryKey, getEntry, saveEntry } from '../../lib/workspace';
+import { entryKey, getEntry, saveEntry, workspaceId } from '../../lib/workspace';
 import Button from '../ui/Button';
 import Loader from '../ui/Loader';
 import TextField from '../fields/TextField';
@@ -77,7 +77,7 @@ export default function EntryEditor({ kind, scope, fields, imageFolder, imageUrl
         const dates = Object.fromEntries(fields.filter(f => f.type === 'date').map(f => [f.name, today()]));
         return finish(dates, '', { path: null, slug: null, baseSha: null, livePhotos: [] });
       }
-      const local = await getEntry(entryKey(project.id, existingPath));
+      const local = await getEntry(entryKey(workspaceId(project), existingPath));
       if (local) {
         return finish(local.data, local.body, { path: local.path, slug: local.slug, baseSha: local.baseSha, livePhotos: local.livePhotos });
       }
@@ -163,8 +163,8 @@ export default function EntryEditor({ kind, scope, fields, imageFolder, imageUrl
     try {
       const { path, slug } = meta.path ? { path: meta.path, slug: meta.slug } : await newPostPath();
       await saveEntry({
-        key: entryKey(project.id, path),
-        projectId: project.id,
+        key: entryKey(workspaceId(project), path),
+        projectId: workspaceId(project),
         kind,
         scope,
         path,
