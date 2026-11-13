@@ -3,7 +3,7 @@ import { parsePost, serializePost } from './frontmatter';
 import {
   commitChanges, dispatchDeploy, fetchDeployInfo, fetchFile, fetchTreeShas, listFiles, RefMovedError, type TreeChange,
 } from './github';
-import { blobToBase64, photoUrlToPath, referencedPhotos } from './photos';
+import { blobToBase64, isMarksmanPhoto, photoUrlToPath, referencedPhotos } from './photos';
 import { listEntries, listPhotos, removeEntry, removePhoto } from './workspace';
 
 export type Conflict = { key: string; title: string; reason: 'changed' | 'exists' | 'deleted' };
@@ -93,7 +93,7 @@ export function planSync(input: {
       }
     }
     for (const url of entry.livePhotos) {
-      if (refs.includes(url) || usedElsewhere(url, entry.path)) continue;
+      if (!isMarksmanPhoto(url) || refs.includes(url) || usedElsewhere(url, entry.path)) continue;
       const path = photoUrlToPath(url, scope.imageFolder, scope.imageUrlPrefix);
       if (repoShas.has(path) && !changes.some(c => c.path === path)) changes.push({ path, delete: true });
     }

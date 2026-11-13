@@ -102,17 +102,23 @@ describe('planSync', () => {
   });
 
   it('deletes a removed photo nothing else uses', () => {
-    const e = entry({ baseSha: 's', livePhotos: ['/images/y.jpg'], data: { title: 'Medus', photos: [] } });
-    const result = plan([e], { repo: [['app/_data/_blog/medus.md', 's'], ['public/images/y.jpg', 'py']] });
-    expect(result.changes).toContainEqual({ path: 'public/images/y.jpg', delete: true });
+    const e = entry({ baseSha: 's', livePhotos: ['/images/medus-1-ab12.jpg'], data: { title: 'Medus', photos: [] } });
+    const result = plan([e], { repo: [['app/_data/_blog/medus.md', 's'], ['public/images/medus-1-ab12.jpg', 'py']] });
+    expect(result.changes).toContainEqual({ path: 'public/images/medus-1-ab12.jpg', delete: true });
+  });
+
+  it('never deletes images Marksman did not create', () => {
+    const e = entry({ state: 'deleted', baseSha: 's', livePhotos: ['/images/hero.png'], data: { title: 'Senas' } });
+    const result = plan([e], { repo: [['app/_data/_blog/medus.md', 's'], ['public/images/hero.png', 'ph']] });
+    expect(result.changes).toEqual([{ path: 'app/_data/_blog/medus.md', delete: true }]);
   });
 
   it('deletes a post and its unused photos', () => {
-    const e = entry({ state: 'deleted', baseSha: 's', livePhotos: ['/images/y.jpg'], data: { title: 'Senas' } });
-    const result = plan([e], { repo: [['app/_data/_blog/medus.md', 's'], ['public/images/y.jpg', 'py']] });
+    const e = entry({ state: 'deleted', baseSha: 's', livePhotos: ['/images/medus-1-ab12.jpg'], data: { title: 'Senas' } });
+    const result = plan([e], { repo: [['app/_data/_blog/medus.md', 's'], ['public/images/medus-1-ab12.jpg', 'py']] });
     expect(result.changes).toEqual([
       { path: 'app/_data/_blog/medus.md', delete: true },
-      { path: 'public/images/y.jpg', delete: true },
+      { path: 'public/images/medus-1-ab12.jpg', delete: true },
     ]);
     expect(result.message).toBe('cms: delete "Senas"');
   });

@@ -72,3 +72,6 @@ export function blobToBase64(blob: Blob): Promise<string> {
     reader.readAsDataURL(blob);
   });
 }
+
+// Names Marksman gives photos (<slug>-<n>-<rand4>.jpg); Sync only ever deletes these
+export const isMarksmanPhoto = (url: string) => /-\d+-[a-z0-9]{4}\.jpg$/.test(url);
