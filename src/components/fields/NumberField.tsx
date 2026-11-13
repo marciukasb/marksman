@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import styles from './fields.module.scss';
 
 interface Props {
@@ -7,10 +8,12 @@ interface Props {
 }
 
 export default function NumberField({ label, value, onChange }: Props) {
+  const id = useId();
   return (
     <div className={styles.field}>
-      <label className={styles.label}>{label}</label>
+      <label className={styles.label} htmlFor={id}>{label}</label>
       <input
+        id={id}
         type="number"
         className={styles.input}
         value={value ?? ''}

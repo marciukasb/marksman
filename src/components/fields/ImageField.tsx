@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useId } from 'react';
 import styles from './fields.module.scss';
 import imageStyles from './ImageField.module.scss';
 
@@ -12,6 +12,7 @@ interface Props {
 
 // Single image (e.g. Ember's thumbnail). Photos stay local until Sync.
 export default function ImageField({ name, value, onChange, onAddFiles, photoSrc }: Props) {
+  const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -30,9 +31,9 @@ export default function ImageField({ name, value, onChange, onAddFiles, photoSrc
 
   return (
     <div className={styles.field}>
-      <label className={styles.label}>{name}</label>
+      <label className={styles.label} htmlFor={id}>{name}</label>
       <div className={imageStyles.row}>
-        <input className={styles.input} value={value} onChange={e => onChange(e.target.value)} placeholder="/images/photo.jpg" />
+        <input id={id} className={styles.input} value={value} onChange={e => onChange(e.target.value)} placeholder="/images/photo.jpg" />
         <button type="button" className={imageStyles.uploadBtn} onClick={() => inputRef.current?.click()} disabled={busy}>
           {busy ? 'Preparing…' : 'Choose photo'}
         </button>

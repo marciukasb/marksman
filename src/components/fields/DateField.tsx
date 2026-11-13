@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import styles from './fields.module.scss';
 
 interface Props {
@@ -7,10 +8,11 @@ interface Props {
 }
 
 export default function DateField({ name, value, onChange }: Props) {
+  const id = useId();
   return (
     <div className={styles.field}>
-      <label className={styles.label}>{name}</label>
-      <input type="date" className={styles.input} value={value} onChange={e => onChange(e.target.value)} />
+      <label className={styles.label} htmlFor={id}>{name}</label>
+      <input id={id} type="date" className={styles.input} value={value} onChange={e => onChange(e.target.value)} />
     </div>
   );
 }

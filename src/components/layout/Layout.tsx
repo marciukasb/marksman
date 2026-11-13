@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation, useMatch } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation, useMatch } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
 import { openProject } from '../../lib/github';
 import { describeOpenError } from '../../lib/config';
@@ -14,6 +14,7 @@ function generateId() {
 
 function usePageTitle() {
   const { project, activeCollection } = useProject();
+  const matchSingle = useMatch('/:owner/:repo/single/:single');
   const matchNew = useMatch('/:owner/:repo/:collection/new');
   const matchEdit = useMatch('/:owner/:repo/:collection/edit/:slug');
   const matchList = useMatch('/:owner/:repo/:collection');
@@ -21,6 +22,7 @@ function usePageTitle() {
   const matchRoot = useMatch('/');
 
   if (matchRoot) return 'Projects';
+  if (matchSingle) return decodeURIComponent(matchSingle.params.single ?? '');
   if (matchNew) return 'New post';
   if (matchEdit) return 'Edit post';
   if (matchList) return activeCollection?.name ?? decodeURIComponent(matchList.params.collection ?? '');
@@ -28,13 +30,13 @@ function usePageTitle() {
   return '';
 }
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function Layout() {
   const { project, config, activeCollection, setActiveCollection, setProject } = useProject();
   const navigate = useNavigate();
   const location = useLocation();
   const pageTitle = usePageTitle();
   // Sync never appears while writing: finishing a post is Submit or Save draft
-  const inEditor = /\/(new|edit\/[^/]+)$/.test(location.pathname);
+  const inEditor = /\/(new|edit\/[^/]+|single\/[^/]+)$/.test(location.pathname);
 
   const [projects, setProjects] = useState<Project[]>(getProjects);
   const [addingProject, setAddingProject] = useState(false);
@@ -95,6 +97,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </button>
               );
             })}
+            {config?.singles?.map(single => {
+              const href = `/${project!.owner}/${project!.repo}/single/${encodeURIComponent(single.name)}`;
+              return (
+                <button
+                  key={single.name}
+                  className={`${styles.navItem} ${location.pathname === href ? styles.navItemActive : ''}`}
+                  onClick={() => navigate(href)}
+                >
+                  {single.name}
+                </button>
+              );
+            })}
           </nav>
 
           <div className={styles.sidebarSection}>
@@ -134,7 +148,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {showSidebar && !inEditor && <SyncBar />}
           </div>
         </header>
-        <div className={styles.content}>{children}</div>
+        <div className={styles.content}><Outlet /></div>
       </div>
     </div>
   );

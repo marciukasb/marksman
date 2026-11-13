@@ -1,4 +1,4 @@
-@use '../styles/variables' as *;
+@use '../../styles/variables' as *;
 
 .page { max-width: 800px; margin: 0 auto; padding: 32px 24px 80px; }
 .error { color: $color-danger; margin-bottom: 16px; }
