@@ -65,3 +65,7 @@ export interface LocalPhoto {
   path: string;
   blob: Blob;
 }
+
+export interface RepoInfo {
+  defaultBranch: string;
+}
