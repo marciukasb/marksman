@@ -1,5 +1,7 @@
 export type FieldType = 'text' | 'textarea' | 'date' | 'select' | 'image' | 'markdown';
 
+export type FieldValue = string | number | string[];
+
 export interface FieldConfig {
   name: string;
   type: FieldType;
@@ -34,7 +36,7 @@ export interface PostFile {
 }
 
 export interface ParsedPost {
-  data: Record<string, string>;
+  data: Record<string, FieldValue>;
   body: string;
   sha: string;
 }

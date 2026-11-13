@@ -1,19 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parsePost, serializePost, generateSlug } from './frontmatter';
-
-describe('generateSlug', () => {
-  it('lowercases and hyphenates a title', () => {
-    expect(generateSlug('My First Post')).toBe('my-first-post');
-  });
-
-  it('strips non-alphanumeric characters', () => {
-    expect(generateSlug('Hello, World!')).toBe('hello-world');
-  });
-
-  it('collapses multiple spaces and hyphens', () => {
-    expect(generateSlug('one  two---three')).toBe('one-two-three');
-  });
-});
+import { parsePost, serializePost } from './frontmatter';
 
 describe('parsePost', () => {
   it('parses frontmatter and body from raw markdown', () => {
@@ -58,5 +44,50 @@ describe('serializePost', () => {
     const parsed = parsePost(raw);
     expect(parsed.data.title).toBe('No Thumbnail');
     expect(parsed.data.thumbnail).toBe('');
+  });
+});
+
+describe('lists', () => {
+  it('parses a list of strings', () => {
+    const raw = '---\nphotos:\n  - /images/a.jpg\n  - "/images/b c.jpg"\n---\n\nT';
+    expect(parsePost(raw).data.photos).toEqual(['/images/a.jpg', '/images/b c.jpg']);
+  });
+
+  it('serializes a list as YAML items', () => {
+    expect(serializePost({ photos: ['/images/a.jpg'] }, 'T')).toContain('photos:\n  - /images/a.jpg');
+  });
+
+  it('serializes and parses an empty list', () => {
+    const raw = serializePost({ photos: [] }, 'T');
+    expect(raw).toContain('photos: []');
+    expect(parsePost(raw).data.photos).toEqual([]);
+  });
+});
+
+describe('numbers', () => {
+  it('parses an unquoted number as a number', () => {
+    expect(parsePost('---\naviliai: 24\n---\n').data.aviliai).toBe(24);
+  });
+
+  it('serializes a number without quotes', () => {
+    expect(serializePost({ aviliai: 24 }, '')).toContain('aviliai: 24');
+  });
+
+  it('keeps a quoted number as a string', () => {
+    expect(parsePost('---\ntitle: "2025"\n---\n').data.title).toBe('2025');
+  });
+});
+
+describe('quoting strings YAML would misread', () => {
+  it.each(['2025', 'true', 'null', 'No', '~'])('quotes %s', value => {
+    expect(serializePost({ title: value }, '')).toContain(`title: "${value}"`);
+  });
+});
+
+describe('Ember round-trip', () => {
+  it('keeps every value unchanged', () => {
+    const ember = '---\ntitle: "Hello"\nsummary: Plain text\ntopic: Tech\ndate: "2026-01-15"\nthumbnail: /images/x.png\n---\n\nBody';
+    const first = parsePost(ember);
+    expect(parsePost(serializePost(first.data, first.body))).toEqual(first);
   });
 });

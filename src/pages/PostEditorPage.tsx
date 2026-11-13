@@ -43,7 +43,7 @@ export default function PostEditorPage() {
       const { content, sha } = await fetchFile(project!.pat, project!.owner, project!.repo, path);
       const { data, body } = parsePost(content);
       const bodyField = activeCollection!.fields.find(f => f.type === 'markdown');
-      setValues({ ...data, ...(bodyField ? { [bodyField.name]: body } : {}) });
+      setValues(Object.fromEntries(Object.entries({ ...data, ...(bodyField ? { [bodyField.name]: body } : {}) }).map(([k, v]) => [k, String(v)])));
       setFileSha(sha);
     } catch {
       setError('Failed to load post.');
