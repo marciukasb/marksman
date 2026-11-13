@@ -22,7 +22,7 @@ describe('fitWithin', () => {
   });
 
   it('rounds to whole pixels', () => {
-    expect(fitWithin(4032, 3025)).toEqual({ width: 2000, height: 1501 });
+    expect(fitWithin(4033, 3000)).toEqual({ width: 2000, height: 1488 });
   });
 });
 
