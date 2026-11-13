@@ -189,6 +189,22 @@ describe('runSync', () => {
     expect(await runSync(deps)).toEqual({ commitSha: 'c1' });
   });
 
+  it('keeps an edit made while the sync was running, based on the synced version', async () => {
+    const original = entry({ data: { title: 'Medus', photos: [] }, updatedAt: 1 });
+    await saveEntry(original);
+    vi.mocked(github.commitChanges).mockImplementation(async () => {
+      await saveEntry({ ...original, data: { title: 'Medus v2', photos: [] }, updatedAt: 2 });
+      return 'c1';
+    });
+    vi.mocked(github.fetchTreeShas)
+      .mockResolvedValueOnce({ commitSha: 'h1', treeSha: 't1', shas: new Map() })
+      .mockResolvedValueOnce({ commitSha: 'c1', treeSha: 't2', shas: new Map([['app/_data/_blog/medus.md', 'synced1']]) });
+    await runSync(deps);
+    const [kept] = await listEntries('p');
+    expect(kept).toMatchObject({ updatedAt: 2, baseSha: 'synced1', state: 'submitted' });
+    expect(kept.data.title).toBe('Medus v2');
+  });
+
   it('keeps drafts after syncing', async () => {
     await saveEntry(entry({ path: 'app/_data/_blog/draft.md', state: 'draft' }));
     await saveEntry(entry({}));

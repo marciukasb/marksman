@@ -4,7 +4,7 @@ import {
   commitChanges, dispatchDeploy, fetchDeployInfo, fetchFile, fetchTreeShas, listFiles, RefMovedError, type TreeChange,
 } from './github';
 import { blobToBase64, isMarksmanPhoto, photoUrlToPath, referencedPhotos } from './photos';
-import { listEntries, listPhotos, removeEntry, removePhoto } from './workspace';
+import { getEntry, listEntries, listPhotos, removeEntry, removePhoto, saveEntry } from './workspace';
 
 export type Conflict = { key: string; title: string; reason: 'changed' | 'exists' | 'deleted' };
 
@@ -157,7 +157,26 @@ export async function runSync(target: SyncTarget): Promise<{ commitSha: string }
     result = await attempt();
   }
 
-  for (const key of result.plan.syncedKeys) await removeEntry(key);
+  // An entry edited while Sync ran is newer than what went out: keep it, now based on the synced file
+  const synced = new Map(entries.map(e => [e.key, e]));
+  const kept = [];
+  for (const key of result.plan.syncedKeys) {
+    const current = await getEntry(key);
+    if (current && current.updatedAt !== synced.get(key)?.updatedAt) kept.push(current);
+    else await removeEntry(key);
+  }
+  if (kept.length > 0) {
+    const { shas } = await fetchTreeShas(pat, owner, repo, branch);
+    for (const entry of kept) {
+      const sent = synced.get(entry.key)!;
+      const fields = scopeFor(sent, config).fields;
+      await saveEntry({
+        ...entry,
+        baseSha: sent.state === 'deleted' ? null : shas.get(entry.path) ?? null,
+        livePhotos: sent.state === 'deleted' ? [] : referencedPhotos(sent.data, sent.body, fields),
+      });
+    }
+  }
   for (const photo of result.plan.photoUploads) await removePhoto(projectId, photo.url);
 
   // The commit already landed; a failure here must not make the Sync look failed
