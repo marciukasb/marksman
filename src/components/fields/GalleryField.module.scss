@@ -1,24 +1,91 @@
 @use '../../styles/variables' as *;
 
-.strip {
-  list-style: none;
+$tile: 140px;
+
+// One box for everything: drop photos anywhere in it, before or after some are added
+.area {
+  border: 2px dashed $color-border;
+  border-radius: $radius;
+  padding: 16px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.empty {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dropActive {
+  border-color: $color-accent;
+  background: rgba(200, 169, 110, 0.06);
+}
+
+.start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: $color-text-muted;
+  font-size: 0.9rem;
+}
+
+.upload {
+  background: none;
+  border: 1px solid $color-accent;
+  color: $color-accent;
+  border-radius: $radius;
+  padding: 12px 22px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover:not(:disabled) { background: rgba(200, 169, 110, 0.1); }
+  &:disabled { opacity: 0.6; cursor: default; }
+}
+
+.tiles {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
 }
 
+// The photos sit in the same row as the add tile
+.strip {
+  list-style: none;
+  display: contents;
+}
+
+.add {
+  width: $tile;
+  height: $tile;
+  border: 2px dashed $color-border;
+  border-radius: $radius;
+  background: none;
+  color: $color-text-muted;
+  font-size: 2rem;
+  cursor: pointer;
+  &:hover:not(:disabled) { border-color: $color-accent; color: $color-accent; }
+  &:disabled { cursor: default; }
+}
+
+.addBusy { font-size: 0.8rem; }
+
 .item {
   position: relative;
-  width: 120px;
+  width: $tile;
+  height: $tile;
   cursor: grab;
+  &:active { cursor: grabbing; }
 }
 
 .dragging { opacity: 0.4; }
 
 .thumb {
   display: block;
-  width: 120px;
-  height: 120px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border-radius: $radius;
   border: 1px solid $color-border;
@@ -26,7 +93,7 @@
 
 .cover {
   position: absolute;
-  top: 6px;
+  bottom: 6px;
   left: 6px;
   background: $color-accent;
   color: #0f0f0f;
@@ -36,42 +103,39 @@
   border-radius: 4px;
 }
 
-.controls {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 4px;
-
-  button {
-    background: $color-surface;
-    border: 1px solid $color-border;
-    color: $color-text;
-    border-radius: 4px;
-    width: 34px;
-    height: 26px;
-    cursor: pointer;
-    &:disabled { opacity: 0.3; cursor: default; }
-    &:not(:disabled):hover { border-color: $color-accent; }
-  }
+%overlay-button {
+  background: rgba(15, 15, 15, 0.75);
+  border: 1px solid $color-border;
+  color: $color-text;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  &:disabled { opacity: 0.3; cursor: default; }
+  &:not(:disabled):hover { border-color: $color-accent; }
 }
 
-.drop {
-  border: 2px dashed $color-border;
-  border-radius: $radius;
-  padding: 18px;
+.remove {
+  @extend %overlay-button;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+.controls {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: flex;
+  gap: 4px;
+  button { @extend %overlay-button; }
+}
+
+.hint {
+  margin-top: 12px;
   text-align: center;
   color: $color-text-muted;
-  font-size: 0.9rem;
-}
-
-.dropActive { border-color: $color-accent; color: $color-text; }
-
-.pick {
-  background: none;
-  border: none;
-  color: $color-accent;
-  text-decoration: underline;
-  cursor: pointer;
-  font: inherit;
+  font-size: 0.85rem;
 }
 
 .error { font-size: 0.8rem; color: $color-danger; }

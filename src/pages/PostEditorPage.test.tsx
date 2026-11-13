@@ -119,7 +119,7 @@ describe('post editor', () => {
     openAt('#/o/r/%C4%AEra%C5%A1ai/new');
     await screen.findByLabelText('title');
     const file = new File(['x'], 'bites.jpg', { type: 'image/jpeg' });
-    fireEvent.drop(screen.getByText(/Drop photos here/), { dataTransfer: { files: [file], types: ['Files'] } });
+    fireEvent.drop(screen.getByRole('group', { name: 'Photo drop area' }), { dataTransfer: { files: [file], types: ['Files'] } });
     await waitFor(() => expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled());
     expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
     finishPhoto(new Blob(['jpg'], { type: 'image/jpeg' }));

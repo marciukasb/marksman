@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import GalleryField from './GalleryField';
 
 const photos = ['/images/a.jpg', '/images/b.jpg', '/images/c.jpg'];
@@ -33,12 +33,31 @@ describe('GalleryField', () => {
     expect(onChange).toHaveBeenCalledWith(['/images/a.jpg', '/images/c.jpg']);
   });
 
-  it('hands dropped files to onAddFiles', () => {
+  it('starts as one big area with an Upload photos button', () => {
     const onAddFiles = vi.fn();
-    render(<GalleryField {...props(vi.fn(), onAddFiles)} />);
+    render(<GalleryField {...props(vi.fn(), onAddFiles)} value={[]} />);
+    expect(screen.getByRole('button', { name: /Upload photos/ })).toBeInTheDocument();
     const file = new File(['x'], 'bites.jpg', { type: 'image/jpeg' });
-    fireEvent.drop(screen.getByText(/Drop photos here/), { dataTransfer: { files: [file], types: ['Files'] } });
+    fireEvent.drop(screen.getByRole('group', { name: 'Photo drop area' }), { dataTransfer: { files: [file], types: ['Files'] } });
     expect(onAddFiles).toHaveBeenCalledWith([file]);
+  });
+
+  it('keeps the photos inside the drop area, with a tile to add more', () => {
+    render(<GalleryField {...props()} />);
+    const area = screen.getByRole('group', { name: 'Photo drop area' });
+    expect(within(area).getAllByRole('img')).toHaveLength(3);
+    expect(within(area).getByRole('button', { name: 'Add more photos' })).toBeInTheDocument();
+  });
+
+  it('adds more photos dropped on top of the existing ones', () => {
+    const onAddFiles = vi.fn();
+    const onChange = vi.fn();
+    render(<GalleryField {...props(onChange, onAddFiles)} />);
+    const file = new File(['x'], 'bites.jpg', { type: 'image/jpeg' });
+    fireEvent.drop(screen.getAllByRole('listitem')[1], { dataTransfer: { files: [file], types: ['Files'] } });
+    fireEvent.drop(screen.getByRole('group', { name: 'Photo drop area' }), { dataTransfer: { files: [file], types: ['Files'] } });
+    expect(onAddFiles).toHaveBeenCalledTimes(2);
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('shows the photos through photoSrc', () => {
