@@ -1,4 +1,4 @@
-export type FieldType = 'text' | 'textarea' | 'date' | 'select' | 'image' | 'markdown';
+export type FieldType = 'text' | 'textarea' | 'date' | 'select' | 'image' | 'markdown' | 'gallery' | 'number';
 
 export type FieldValue = string | number | string[];
 
