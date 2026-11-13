@@ -6,6 +6,15 @@ export interface FieldConfig {
   name: string;
   type: FieldType;
   options?: string[];
+  label?: string;
+}
+
+export interface SingleConfig {
+  name: string;
+  file: string;
+  imageFolder?: string;
+  imageUrlPrefix?: string;
+  fields: FieldConfig[];
 }
 
 export interface CollectionConfig {
@@ -19,6 +28,7 @@ export interface CollectionConfig {
 export interface CmsConfig {
   deployWorkflow?: string;
   collections: CollectionConfig[];
+  singles?: SingleConfig[];
 }
 
 export interface Project {

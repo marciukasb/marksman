@@ -63,3 +63,12 @@ export function galleryOutsideBody(photos: string[], body: string): string[] {
   const inline = new Set(inlinePhotos(body));
   return photos.filter(url => !inline.has(url));
 }
+
+export function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).split(',')[1] ?? '');
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
