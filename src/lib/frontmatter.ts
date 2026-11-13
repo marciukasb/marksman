@@ -77,11 +77,3 @@ export function serializePost(data: Record<string, FieldValue>, body: string): s
   return `---\n${yaml}\n---\n\n${body}`;
 }
 
-// Temporary: the editor still uses this until it switches to slugify (lib/slug.ts)
-export function generateSlug(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/[\s-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}

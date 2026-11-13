@@ -19,3 +19,16 @@
 .itemDate { font-size: 0.8rem; color: $color-text-muted; }
 .itemActions { display: flex; gap: 8px; }
 .empty { color: $color-text-muted; }
+.label {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 8px;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid $color-border;
+}
+.Live { color: #22c55e; border-color: rgba(34, 197, 94, 0.4); }
+.Draft { color: $color-text-muted; }
+.Waitingtosync { color: $color-accent; border-color: rgba(200, 169, 110, 0.5); }
+.Willbedeleted { color: $color-danger; border-color: rgba(224, 85, 85, 0.5); }

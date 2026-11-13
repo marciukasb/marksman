@@ -147,6 +147,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const pendingCount = entries.filter(e => e.state !== 'draft').length;
   const status = deriveStatus({ syncing, pending: pendingCount, lastSync, run, deploy, now });
 
+  useEffect(() => {
+    if (pendingCount === 0) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [pendingCount]);
+
   // Only poll GitHub while a deploy is actually in flight
   useEffect(() => {
     if (status.kind !== 'updating') return;
