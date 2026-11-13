@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { LocalEntry } from '../types';
 import { useProject } from './ProjectContext';
-import { listEntries, removeEntry, saveEntry } from '../lib/workspace';
+import { listEntries, listPhotos, removeEntry, saveEntry, savePhoto } from '../lib/workspace';
+import { photoFilename, photoUrlToPath, processPhoto, randomSuffix } from '../lib/photos';
 import { fetchDeployInfo, fetchRunForCommit, fetchTreeShas } from '../lib/github';
 import { runSync, SyncConflictError, type Conflict } from '../lib/sync';
 import { deriveStatus, type StatusKind } from '../lib/status';
@@ -22,6 +23,8 @@ interface WorkspaceValue {
   sync: () => Promise<void>;
   resolveConflict: (key: string, choice: 'mine' | 'theirs') => Promise<void>;
   dismissConflicts: () => void;
+  addPhotos: (files: File[], slug: string, folder: string, prefix?: string) => Promise<{ urls: string[]; errors: string[] }>;
+  photoSrc: (url: string, folder: string, prefix?: string) => string;
 }
 
 const WorkspaceContext = createContext<WorkspaceValue | null>(null);
@@ -48,6 +51,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [deploy, setDeploy] = useState<Deploy | null>(null);
   const [run, setRun] = useState<Run | null>(null);
   const [now, setNow] = useState(Date.now());
+  // Object URLs for photos that only exist in this browser so far
+  const [localSrc, setLocalSrc] = useState<Map<string, string>>(new Map());
 
   const projectId = project?.id ?? null;
   const workflow = config?.deployWorkflow;
@@ -64,6 +69,53 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     setConflicts([]);
     setSyncError('');
   }, [projectId, refresh]);
+
+  useEffect(() => {
+    let urls = new Map<string, string>();
+    let cancelled = false;
+    (projectId ? listPhotos(projectId) : Promise.resolve([])).then(photos => {
+      if (cancelled) return;
+      urls = new Map(photos.map(p => [p.url, URL.createObjectURL(p.blob)]));
+      setLocalSrc(urls);
+    });
+    return () => {
+      cancelled = true;
+      urls.forEach(u => URL.revokeObjectURL(u));
+    };
+  }, [projectId]);
+
+  const addPhotos = useCallback(async (files: File[], slug: string, folder: string, prefix?: string) => {
+    const urls: string[] = [];
+    const errors: string[] = [];
+    if (!projectId) return { urls, errors };
+    const used = [...localSrc.keys()]
+      .map(url => url.split('/').pop()?.match(new RegExp(`^${slug}-(\\d+)-`))?.[1])
+      .filter(Boolean)
+      .map(Number);
+    let n = used.length > 0 ? Math.max(...used) : 0;
+    const added = new Map<string, string>();
+    for (const file of files) {
+      try {
+        const blob = await processPhoto(file);
+        const name = photoFilename(slug, ++n, randomSuffix());
+        const url = prefix ? `${prefix}/${name}` : `/${folder}/${name}`;
+        await savePhoto({ key: '', projectId, url, path: `${folder}/${name}`, blob });
+        added.set(url, URL.createObjectURL(blob));
+        urls.push(url);
+      } catch (err) {
+        errors.push(`${file.name}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    setLocalSrc(prev => new Map([...prev, ...added]));
+    return { urls, errors };
+  }, [projectId, localSrc]);
+
+  const photoSrc = useCallback((url: string, folder: string, prefix?: string) => {
+    const local = localSrc.get(url);
+    if (local || !project || !repoInfo || !url.startsWith('/')) return local ?? url;
+    const path = photoUrlToPath(url, folder, prefix);
+    return `https://raw.githubusercontent.com/${project.owner}/${project.repo}/${repoInfo.defaultBranch}/${path}`;
+  }, [localSrc, project, repoInfo]);
 
   const loadDeploy = useCallback(async () => {
     if (!project || !workflow) return setDeploy(null);
@@ -156,7 +208,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     sync,
     resolveConflict,
     dismissConflicts: () => setConflicts([]),
-  }), [entries, refresh, pendingCount, syncing, status, run, syncError, conflicts, sync, resolveConflict]);
+    addPhotos,
+    photoSrc,
+  }), [entries, refresh, pendingCount, syncing, status, run, syncError, conflicts, sync, resolveConflict, addPhotos, photoSrc]);
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }

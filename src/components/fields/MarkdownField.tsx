@@ -1,87 +1,101 @@
 import { useRef, useState } from 'react';
-import MDEditor, { commands } from '@uiw/react-md-editor';
-import { uploadImage } from '../../lib/github';
+import MDEditor, { commands, type ICommand, type TextAreaTextApi } from '@uiw/react-md-editor';
+import { insertAt } from '../../lib/order';
+import PhotoPicker from './PhotoPicker';
 import styles from './fields.module.scss';
 
 interface Props {
   name: string;
   value: string;
   onChange: (value: string) => void;
-  pat: string;
-  owner: string;
-  repo: string;
-  imageFolder: string;
-  imageUrlPrefix?: string;
+  photoSrc: (url: string) => string;
+  onAddFiles: (files: File[]) => Promise<{ urls: string[]; errors: string[] }>;
+  // Present when the collection has a gallery field: inline photos come from (and go into) it
+  galleryPhotos?: string[];
+  onAddToGallery?: (urls: string[]) => void;
 }
 
-export default function MarkdownField({ name, value, onChange, pat, owner, repo, imageFolder, imageUrlPrefix }: Props) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const apiRef = useRef<any>(null);
-  const [uploading, setUploading] = useState(false);
+const imageMarkdown = (urls: string[]) => urls.map(url => `![](${url})`).join('\n\n');
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const base64 = (reader.result as string).split(',')[1];
-        const url = await uploadImage(pat, owner, repo, imageFolder, file.name, base64, imageUrlPrefix);
-        if (apiRef.current) {
-          const alt = file.name.replace(/\.[^.]+$/, '');
-          apiRef.current.replaceSelection(`![${alt}](${url})`);
-        }
-      } finally {
-        setUploading(false);
-        e.target.value = '';
-      }
-    };
-    reader.onerror = () => setUploading(false);
-    reader.readAsDataURL(file);
+export default function MarkdownField({ name, value, onChange, photoSrc, onAddFiles, galleryPhotos, onAddToGallery }: Props) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const apiRef = useRef<TextAreaTextApi | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
+
+  async function addFiles(files: File[]): Promise<string[]> {
+    setBusy(true);
+    const result = await onAddFiles(files);
+    setBusy(false);
+    setErrors(result.errors);
+    if (result.urls.length > 0) onAddToGallery?.(result.urls);
+    return result.urls;
   }
 
-  const uploadImageCommand = {
-    name: 'uploadImage',
-    keyCommand: 'uploadImage',
-    buttonProps: { 'aria-label': 'Upload image', title: 'Upload image' },
+  function insertFromPicker(urls: string[]) {
+    setPickerOpen(false);
+    if (urls.length > 0) apiRef.current?.replaceSelection(imageMarkdown(urls));
+  }
+
+  // Photos dropped or pasted straight into the text land at the cursor
+  async function handleFiles(e: React.DragEvent | React.ClipboardEvent, files: File[]) {
+    const images = files.filter(f => f.type.startsWith('image/'));
+    if (images.length === 0) return;
+    e.preventDefault();
+    const cursor = wrapperRef.current?.querySelector('textarea')?.selectionStart ?? value.length;
+    const urls = await addFiles(images);
+    if (urls.length > 0) onChange(insertAt(value, cursor, `\n\n${imageMarkdown(urls)}\n\n`));
+  }
+
+  const insertPhotoCommand: ICommand = {
+    name: 'insertPhoto',
+    keyCommand: 'insertPhoto',
+    buttonProps: { 'aria-label': 'Insert photo', title: 'Insert photo' },
     icon: (
       <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
-        <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
-        <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
-        <path d="M9.5 9.5 9 9l-1-1-1 1-.5.5V11h4V9.5z" opacity=".4"/>
-        <path d="M10 7.5a.5.5 0 0 1 .5.5v2h-1V8a.5.5 0 0 1 .5-.5zm-1.5 1a.5.5 0 0 1 .354.146l.5.5-.707.707-.147-.146V10h-1V8.5a.5.5 0 0 1 .5-.5z" opacity=".6"/>
+        <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
+        <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z" />
       </svg>
     ),
-    execute: (_state: any, api: any) => {
+    execute: (_state, api) => {
       apiRef.current = api;
-      fileInputRef.current?.click();
+      setPickerOpen(true);
     },
   };
 
   return (
-    <div className={styles.field} data-color-mode="dark">
+    <div
+      ref={wrapperRef}
+      className={styles.field}
+      data-color-mode="dark"
+      onDropCapture={e => handleFiles(e, Array.from(e.dataTransfer.files ?? []))}
+      onPasteCapture={e => handleFiles(e, Array.from(e.clipboardData.files ?? []))}
+    >
       <label className={styles.label}>{name}</label>
       <MDEditor
         value={value}
         onChange={v => onChange(v ?? '')}
         height={400}
         preview="live"
-        commands={[...commands.getCommands().filter(c => c.name !== 'image'), commands.divider, uploadImageCommand]}
+        commands={[...commands.getCommands().filter(c => c.name !== 'image'), commands.divider, insertPhotoCommand]}
         previewOptions={{
           components: {
-            img: ({ src, alt }: { src?: string; alt?: string }) => {
-              // Rewrite relative URLs so images load from the GitHub repo instead of this domain
-              const previewSrc = src?.startsWith('/')
-                ? `https://raw.githubusercontent.com/${owner}/${repo}/master/${imageFolder}/${src.split('/').pop()}`
-                : src;
-              return <img src={previewSrc} alt={alt ?? ''} style={{ maxWidth: '100%' }} />;
-            },
+            img: ({ src, alt }) => <img src={src ? photoSrc(src) : src} alt={alt ?? ''} style={{ maxWidth: '100%' }} />,
           },
         }}
       />
-      <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
-      {uploading && <span style={{ fontSize: '0.8rem', color: '#888' }}>Uploading image…</span>}
+      {busy && <span style={{ fontSize: '0.8rem', color: '#888' }}>Preparing photos…</span>}
+      {errors.map(err => <span key={err} style={{ fontSize: '0.8rem', color: '#e05555' }}>{err}</span>)}
+      {pickerOpen && (
+        <PhotoPicker
+          photos={galleryPhotos ?? []}
+          photoSrc={photoSrc}
+          onPick={url => insertFromPicker([url])}
+          onAddFiles={async files => insertFromPicker(await addFiles(files))}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
     </div>
   );
 }

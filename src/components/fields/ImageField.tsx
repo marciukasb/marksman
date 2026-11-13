@@ -1,5 +1,4 @@
 import { useRef, useState } from 'react';
-import { uploadImage } from '../../lib/github';
 import styles from './fields.module.scss';
 import imageStyles from './ImageField.module.scss';
 
@@ -7,58 +6,39 @@ interface Props {
   name: string;
   value: string;
   onChange: (value: string) => void;
-  pat: string;
-  owner: string;
-  repo: string;
-  imageFolder: string;
-  imageUrlPrefix?: string;
+  onAddFiles: (files: File[]) => Promise<{ urls: string[]; errors: string[] }>;
+  photoSrc: (url: string) => string;
 }
 
-export default function ImageField({ name, value, onChange, pat, owner, repo, imageFolder, imageUrlPrefix }: Props) {
+// Single image (e.g. Ember's thumbnail). Photos stay local until Sync.
+export default function ImageField({ name, value, onChange, onAddFiles, photoSrc }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    setUploading(true);
+    setBusy(true);
     setError('');
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const base64 = (reader.result as string).split(',')[1];
-        const path = await uploadImage(pat, owner, repo, imageFolder, file.name, base64, imageUrlPrefix);
-        onChange(path);
-      } catch {
-        setError('Upload failed.');
-      } finally {
-        setUploading(false);
-      }
-    };
-    reader.onerror = () => {
-      setError('Could not read file.');
-      setUploading(false);
-    };
-    reader.readAsDataURL(file);
+    const { urls, errors } = await onAddFiles([file]);
+    if (urls[0]) onChange(urls[0]);
+    setError(errors[0] ?? '');
+    setBusy(false);
   }
-
-  // Build a previewable URL via raw.githubusercontent.com so images load in the editor
-  const previewUrl = value
-    ? `https://raw.githubusercontent.com/${owner}/${repo}/master/${imageFolder}/${value.split('/').pop()}`
-    : null;
 
   return (
     <div className={styles.field}>
       <label className={styles.label}>{name}</label>
       <div className={imageStyles.row}>
-        <input className={styles.input} value={value} onChange={e => onChange(e.target.value)} placeholder="/images/photo.png" />
-        <button type="button" className={imageStyles.uploadBtn} onClick={() => inputRef.current?.click()} disabled={uploading}>
-          {uploading ? 'Uploading…' : 'Upload'}
+        <input className={styles.input} value={value} onChange={e => onChange(e.target.value)} placeholder="/images/photo.jpg" />
+        <button type="button" className={imageStyles.uploadBtn} onClick={() => inputRef.current?.click()} disabled={busy}>
+          {busy ? 'Preparing…' : 'Choose photo'}
         </button>
       </div>
-      <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
-      {previewUrl && <img src={previewUrl} alt="preview" className={imageStyles.preview} />}
+      <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFile} />
+      {value && <img src={photoSrc(value)} alt="preview" className={imageStyles.preview} />}
       {error && <span className={imageStyles.error}>{error}</span>}
     </div>
   );

@@ -1,0 +1,67 @@
+@use '../../styles/variables' as *;
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius;
+  padding: 20px;
+
+  h2 { font-size: 1rem; margin-bottom: 12px; }
+}
+
+.grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+
+  button {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: $radius;
+    background: none;
+    cursor: pointer;
+    &:hover { border-color: $color-accent; }
+  }
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+}
+
+.empty { color: $color-text-muted; font-size: 0.9rem; }
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+
+  button {
+    background: $color-bg;
+    border: 1px solid $color-border;
+    color: $color-text;
+    border-radius: $radius;
+    padding: 6px 12px;
+    cursor: pointer;
+    &:hover { border-color: $color-accent; }
+  }
+}

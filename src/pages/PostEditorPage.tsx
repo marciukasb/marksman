@@ -13,10 +13,13 @@ import ImageField from '../components/fields/ImageField';
 import MarkdownField from '../components/fields/MarkdownField';
 import type { FieldConfig } from '../types';
 import { fieldLabel } from '../lib/config';
+import { useWorkspace } from '../context/WorkspaceContext';
+import { slugify } from '../lib/slug';
 import styles from './PostEditorPage.module.scss';
 
 export default function PostEditorPage() {
   const { project, activeCollection } = useProject();
+  const { addPhotos, photoSrc } = useWorkspace();
   const { slug } = useParams<{ slug?: string }>();
   const navigate = useNavigate();
   const isNew = !slug;
@@ -106,32 +109,21 @@ export default function PostEditorPage() {
       case 'textarea': return <TextareaField key={field.name} name={label} value={value} onChange={onChange} />;
       case 'date': return <DateField key={field.name} name={label} value={value} onChange={onChange} />;
       case 'select': return <SelectField key={field.name} name={label} value={value} options={field.options ?? []} onChange={onChange} />;
-      case 'image': return (
-        <ImageField
-          key={field.name}
-          name={label}
-          value={value}
-          onChange={onChange}
-          pat={project!.pat}
-          owner={project!.owner}
-          repo={project!.repo}
-          imageFolder={activeCollection!.imageFolder}
-          imageUrlPrefix={activeCollection!.imageUrlPrefix}
-        />
-      );
-      case 'markdown': return (
-        <MarkdownField
-          key={field.name}
-          name={label}
-          value={value}
-          onChange={onChange}
-          pat={project!.pat}
-          owner={project!.owner}
-          repo={project!.repo}
-          imageFolder={activeCollection!.imageFolder}
-          imageUrlPrefix={activeCollection!.imageUrlPrefix}
-        />
-      );
+      case 'image':
+      case 'markdown': {
+        const folder = activeCollection!.imageFolder;
+        const prefix = activeCollection!.imageUrlPrefix;
+        const photoSlug = slug ?? slugify(values.title ?? '', new Date().toISOString().slice(0, 10));
+        const shared = {
+          key: field.name,
+          name: label,
+          value,
+          onChange,
+          photoSrc: (url: string) => photoSrc(url, folder, prefix),
+          onAddFiles: (files: File[]) => addPhotos(files, photoSlug, folder, prefix),
+        };
+        return field.type === 'image' ? <ImageField {...shared} /> : <MarkdownField {...shared} />;
+      }
       default: return null;
     }
   }

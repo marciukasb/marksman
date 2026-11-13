@@ -1,0 +1,77 @@
+@use '../../styles/variables' as *;
+
+.strip {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.item {
+  position: relative;
+  width: 120px;
+  cursor: grab;
+}
+
+.dragging { opacity: 0.4; }
+
+.thumb {
+  display: block;
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: $radius;
+  border: 1px solid $color-border;
+}
+
+.cover {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: $color-accent;
+  color: #0f0f0f;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+
+  button {
+    background: $color-surface;
+    border: 1px solid $color-border;
+    color: $color-text;
+    border-radius: 4px;
+    width: 34px;
+    height: 26px;
+    cursor: pointer;
+    &:disabled { opacity: 0.3; cursor: default; }
+    &:not(:disabled):hover { border-color: $color-accent; }
+  }
+}
+
+.drop {
+  border: 2px dashed $color-border;
+  border-radius: $radius;
+  padding: 18px;
+  text-align: center;
+  color: $color-text-muted;
+  font-size: 0.9rem;
+}
+
+.dropActive { border-color: $color-accent; color: $color-text; }
+
+.pick {
+  background: none;
+  border: none;
+  color: $color-accent;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+
+.error { font-size: 0.8rem; color: $color-danger; }
