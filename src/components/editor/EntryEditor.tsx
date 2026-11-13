@@ -56,7 +56,8 @@ export default function EntryEditor({ kind, scope, fields, imageFolder, imageUrl
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [photoBusy, setPhotoBusy] = useState(false);
+  // Photos still being shrunk; saving now would leave them out of the post
+  const [photoWork, setPhotoWork] = useState(0);
   const [photoErrors, setPhotoErrors] = useState<string[]>([]);
   const leaving = useRef(false);
 
@@ -131,11 +132,18 @@ export default function EntryEditor({ kind, scope, fields, imageFolder, imageUrl
 
   const photoSlug = () => meta.slug ?? slugify(String(data.title ?? ''), today());
 
+  async function trackedAddPhotos(files: File[]) {
+    setPhotoWork(n => n + 1);
+    try {
+      return await addPhotos(files, photoSlug(), imageFolder, imageUrlPrefix);
+    } finally {
+      setPhotoWork(n => n - 1);
+    }
+  }
+
   async function addGalleryFiles(files: File[]) {
     if (!galleryField) return;
-    setPhotoBusy(true);
-    const { urls, errors } = await addPhotos(files, photoSlug(), imageFolder, imageUrlPrefix);
-    setPhotoBusy(false);
+    const { urls, errors } = await trackedAddPhotos(files);
     setPhotoErrors(errors);
     setData(d => ({ ...d, [galleryField.name]: [...((d[galleryField.name] as string[]) ?? []), ...urls] }));
   }
@@ -183,7 +191,7 @@ export default function EntryEditor({ kind, scope, fields, imageFolder, imageUrl
     const text = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
     const onText = (v: string) => setField(field.name, v);
     const src = (url: string) => photoSrc(url, imageFolder, imageUrlPrefix);
-    const addFiles = (files: File[]) => addPhotos(files, photoSlug(), imageFolder, imageUrlPrefix);
+    const addFiles = trackedAddPhotos;
 
     switch (field.type) {
       case 'text': return <TextField key={field.name} name={label} value={text} onChange={onText} />;
@@ -203,7 +211,7 @@ export default function EntryEditor({ kind, scope, fields, imageFolder, imageUrl
             onChange={urls => setField(field.name, urls)}
             onAddFiles={addGalleryFiles}
             photoSrc={src}
-            busy={photoBusy}
+            busy={photoWork > 0}
             errors={photoErrors}
           />
         );
@@ -236,8 +244,9 @@ export default function EntryEditor({ kind, scope, fields, imageFolder, imageUrl
       {error && <p className={styles.error}>{error}</p>}
       <div className={styles.fields}>{ordered.map(renderField)}</div>
       <div className={styles.actions}>
-        <Button onClick={() => save('submitted')} loading={saving}>Submit</Button>
-        <Button variant="secondary" onClick={() => save('draft')} loading={saving}>Save draft</Button>
+        <Button onClick={() => save('submitted')} loading={saving} disabled={photoWork > 0}>Submit</Button>
+        <Button variant="secondary" onClick={() => save('draft')} loading={saving} disabled={photoWork > 0}>Save draft</Button>
+        {photoWork > 0 && <span className={styles.note}>Preparing photos…</span>}
       </div>
     </div>
   );

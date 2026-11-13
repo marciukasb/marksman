@@ -6,6 +6,13 @@ import { listEntries, saveEntry, entryKey } from '../lib/workspace';
 import * as github from '../lib/github';
 import type { CmsConfig } from '../types';
 
+// Photo processing needs a real canvas; tests control when it finishes
+let finishPhoto: (blob: Blob) => void = () => {};
+vi.mock('../lib/photos', async importOriginal => {
+  const actual = await importOriginal<typeof import('../lib/photos')>();
+  return { ...actual, processPhoto: vi.fn(() => new Promise<Blob>(resolve => { finishPhoto = resolve; })) };
+});
+
 vi.mock('../lib/github', async importOriginal => {
   const actual = await importOriginal<typeof import('../lib/github')>();
   return {
@@ -100,6 +107,18 @@ describe('post editor', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit' }));
     await waitFor(async () => expect(await listEntries('p1')).toHaveLength(1));
     expect((await listEntries('p1'))[0]).toMatchObject({ baseSha: 'live1', livePhotos: ['/images/g.jpg'], body: 'Tekstas' });
+  });
+
+  it('blocks Submit and Save draft while photos are being prepared', async () => {
+    openAt('#/o/r/%C4%AEra%C5%A1ai/new');
+    await screen.findByLabelText('title');
+    const file = new File(['x'], 'bites.jpg', { type: 'image/jpeg' });
+    fireEvent.drop(screen.getByText(/Drop photos here/), { dataTransfer: { files: [file], types: ['Files'] } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Submit' })).toBeDisabled());
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
+    finishPhoto(new Blob(['jpg'], { type: 'image/jpeg' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Submit' })).toBeEnabled());
+    expect(screen.getAllByRole('img', { name: /Photo 1/ })).toHaveLength(1);
   });
 
   it('does not show Sync while editing', async () => {

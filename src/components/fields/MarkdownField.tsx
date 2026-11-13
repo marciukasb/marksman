@@ -20,6 +20,9 @@ const imageMarkdown = (urls: string[]) => urls.map(url => `![](${url})`).join('\
 export default function MarkdownField({ name, value, onChange, photoSrc, onAddFiles, galleryPhotos, onAddToGallery }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<TextAreaTextApi | null>(null);
+  // Latest text, so photos finishing later don't overwrite what was typed meanwhile
+  const valueRef = useRef(value);
+  valueRef.current = value;
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
@@ -45,7 +48,7 @@ export default function MarkdownField({ name, value, onChange, photoSrc, onAddFi
     e.preventDefault();
     const cursor = wrapperRef.current?.querySelector('textarea')?.selectionStart ?? value.length;
     const urls = await addFiles(images);
-    if (urls.length > 0) onChange(insertAt(value, cursor, `\n\n${imageMarkdown(urls)}\n\n`));
+    if (urls.length > 0) onChange(insertAt(valueRef.current, cursor, `\n\n${imageMarkdown(urls)}\n\n`));
   }
 
   const insertPhotoCommand: ICommand = {
