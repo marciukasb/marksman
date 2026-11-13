@@ -40,3 +40,28 @@ export interface ParsedPost {
   body: string;
   sha: string;
 }
+
+export type EntryState = 'draft' | 'submitted' | 'deleted';
+
+export interface LocalEntry {
+  key: string;
+  projectId: string;
+  kind: 'post' | 'single';
+  scope: string;
+  path: string;
+  slug: string | null;
+  state: EntryState;
+  baseSha: string | null;
+  livePhotos: string[];
+  data: Record<string, FieldValue>;
+  body: string;
+  updatedAt: number;
+}
+
+export interface LocalPhoto {
+  key: string;
+  projectId: string;
+  url: string;
+  path: string;
+  blob: Blob;
+}
