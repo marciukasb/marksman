@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation, useMatch } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
 import { openProject } from '../../lib/github';
+import { describeOpenError } from '../../lib/config';
 import { getProjects, saveProject } from '../../lib/storage';
 import SyncBar from '../sync/SyncBar';
 import type { Project } from '../../types';
@@ -62,8 +63,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       setAddingProject(false);
       setForm({ label: '', owner: '', repo: '', pat: '' });
       navigate(`/${newProject.owner}/${newProject.repo}`);
-    } catch {
-      setAddError('Could not connect. Check repo name, PAT, and that .cms.json exists.');
+    } catch (err) {
+      setAddError(describeOpenError(err));
     } finally {
       setAddLoading(false);
     }

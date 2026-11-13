@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProjects, saveProject, deleteProject } from '../lib/storage';
 import { openProject } from '../lib/github';
+import { describeOpenError } from '../lib/config';
 import { useProject } from '../context/ProjectContext';
 import Button from '../components/ui/Button';
 import type { Project } from '../types';
@@ -27,8 +28,8 @@ export default function ProjectsPage() {
       const { config, repoInfo } = await openProject(project.pat, project.owner, project.repo);
       setProject(project, config, repoInfo);
       navigate(`/${project.owner}/${project.repo}`);
-    } catch {
-      setError(`Could not load .cms.json from ${project.owner}/${project.repo}`);
+    } catch (err) {
+      setError(`${project.owner}/${project.repo}: ${describeOpenError(err)}`);
     } finally {
       setLoading(false);
     }
@@ -44,8 +45,8 @@ export default function ProjectsPage() {
       setProjects(getProjects());
       setShowForm(false);
       setForm({ label: '', owner: '', repo: '', pat: '' });
-    } catch {
-      setError('Could not connect. Check the repo name, PAT, and that .cms.json exists.');
+    } catch (err) {
+      setError(describeOpenError(err));
     }
   }
 

@@ -12,6 +12,7 @@ import SelectField from '../components/fields/SelectField';
 import ImageField from '../components/fields/ImageField';
 import MarkdownField from '../components/fields/MarkdownField';
 import type { FieldConfig } from '../types';
+import { fieldLabel } from '../lib/config';
 import styles from './PostEditorPage.module.scss';
 
 export default function PostEditorPage() {
@@ -98,16 +99,17 @@ export default function PostEditorPage() {
   function renderField(field: FieldConfig) {
     const value = values[field.name] ?? '';
     const onChange = (v: string) => setField(field.name, v);
+    const label = fieldLabel(field);
 
     switch (field.type) {
-      case 'text': return <TextField key={field.name} name={field.name} value={value} onChange={onChange} />;
-      case 'textarea': return <TextareaField key={field.name} name={field.name} value={value} onChange={onChange} />;
-      case 'date': return <DateField key={field.name} name={field.name} value={value} onChange={onChange} />;
-      case 'select': return <SelectField key={field.name} name={field.name} value={value} options={field.options ?? []} onChange={onChange} />;
+      case 'text': return <TextField key={field.name} name={label} value={value} onChange={onChange} />;
+      case 'textarea': return <TextareaField key={field.name} name={label} value={value} onChange={onChange} />;
+      case 'date': return <DateField key={field.name} name={label} value={value} onChange={onChange} />;
+      case 'select': return <SelectField key={field.name} name={label} value={value} options={field.options ?? []} onChange={onChange} />;
       case 'image': return (
         <ImageField
           key={field.name}
-          name={field.name}
+          name={label}
           value={value}
           onChange={onChange}
           pat={project!.pat}
@@ -120,7 +122,7 @@ export default function PostEditorPage() {
       case 'markdown': return (
         <MarkdownField
           key={field.name}
-          name={field.name}
+          name={label}
           value={value}
           onChange={onChange}
           pat={project!.pat}
