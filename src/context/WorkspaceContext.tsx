@@ -20,6 +20,8 @@ interface WorkspaceValue {
   runUrl: string | null;
   syncError: string;
   conflicts: Conflict[];
+  // Goes up after every successful Sync, so pages showing GitHub's files can reload
+  syncCount: number;
   sync: () => Promise<void>;
   resolveConflict: (key: string, choice: 'mine' | 'theirs') => Promise<void>;
   dismissConflicts: () => void;
@@ -48,6 +50,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [syncError, setSyncError] = useState('');
   const [conflicts, setConflicts] = useState<Conflict[]>([]);
   const [lastSync, setLastSync] = useState<LastSync | null>(null);
+  const [syncCount, setSyncCount] = useState(0);
   const [deploy, setDeploy] = useState<Deploy | null>(null);
   const [run, setRun] = useState<Run | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -178,6 +181,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       const next = { sha: commitSha, at: Date.now() };
       localStorage.setItem(lastSyncKey(project.id), JSON.stringify(next));
       setLastSync(next);
+      setSyncCount(c => c + 1);
       setRun(null);
       await loadDeploy();
     } catch (err) {
@@ -212,12 +216,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     runUrl: run?.url ?? null,
     syncError,
     conflicts,
+    syncCount,
     sync,
     resolveConflict,
     dismissConflicts: () => setConflicts([]),
     addPhotos,
     photoSrc,
-  }), [entries, refresh, pendingCount, syncing, status, run, syncError, conflicts, sync, resolveConflict, addPhotos, photoSrc]);
+  }), [entries, refresh, pendingCount, syncing, status, run, syncError, conflicts, syncCount, sync, resolveConflict, addPhotos, photoSrc]);
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }

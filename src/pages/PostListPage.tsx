@@ -21,12 +21,13 @@ interface LivePost {
 
 export default function PostListPage() {
   const { project, repoInfo, activeCollection } = useProject();
-  const { entries, refresh } = useWorkspace();
+  const { entries, refresh, syncCount } = useWorkspace();
   const navigate = useNavigate();
   const [live, setLive] = useState<LivePost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // syncCount is a dependency so the list reloads from GitHub after every Sync
   const loadPosts = useCallback(async () => {
     if (!project || !repoInfo || !activeCollection) return;
     setLoading(true);
@@ -50,7 +51,8 @@ export default function PostListPage() {
     } finally {
       setLoading(false);
     }
-  }, [project, repoInfo, activeCollection]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project, repoInfo, activeCollection, syncCount]);
 
   useEffect(() => {
     if (!project || !activeCollection) navigate('/');
