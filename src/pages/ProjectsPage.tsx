@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProjects, saveProject, deleteProject } from '../lib/storage';
-import { fetchConfig } from '../lib/github';
+import { openProject } from '../lib/github';
 import { useProject } from '../context/ProjectContext';
 import Button from '../components/ui/Button';
 import type { Project } from '../types';
@@ -24,8 +24,8 @@ export default function ProjectsPage() {
     setLoading(true);
     setError('');
     try {
-      const config = await fetchConfig(project.pat, project.owner, project.repo);
-      setProject(project, config);
+      const { config, repoInfo } = await openProject(project.pat, project.owner, project.repo);
+      setProject(project, config, repoInfo);
       navigate(`/${project.owner}/${project.repo}`);
     } catch {
       setError(`Could not load .cms.json from ${project.owner}/${project.repo}`);
@@ -39,7 +39,7 @@ export default function ProjectsPage() {
     setError('');
     const project: Project = { id: generateId(), ...form };
     try {
-      await fetchConfig(project.pat, project.owner, project.repo);
+      await openProject(project.pat, project.owner, project.repo);
       saveProject(project);
       setProjects(getProjects());
       setShowForm(false);

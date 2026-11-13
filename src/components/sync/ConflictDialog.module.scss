@@ -1,0 +1,55 @@
+@use '../../styles/variables' as *;
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.dialog {
+  width: min(520px, calc(100vw - 32px));
+  background: $color-surface;
+  border: 1px solid $color-border;
+  border-radius: $radius;
+  padding: 24px;
+
+  h2 { font-size: 1.1rem; margin-bottom: 8px; }
+  p { color: $color-text-muted; font-size: 0.9rem; margin-bottom: 16px; }
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+
+  button {
+    background: $color-bg;
+    border: 1px solid $color-border;
+    color: $color-text;
+    border-radius: $radius;
+    padding: 5px 12px;
+    cursor: pointer;
+    &:hover { border-color: $color-accent; }
+  }
+}
+
+.later {
+  background: none;
+  border: none;
+  color: $color-text-muted;
+  cursor: pointer;
+  &:hover { color: $color-text; }
+}

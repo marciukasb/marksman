@@ -272,3 +272,9 @@ export async function fetchRunForCommit(
 export async function dispatchDeploy(pat: string, owner: string, repo: string, workflow: string, branch: string): Promise<void> {
   await client(pat).actions.createWorkflowDispatch({ owner, repo, workflow_id: workflow, ref: branch });
 }
+
+// Everything Marksman needs to open a project
+export async function openProject(pat: string, owner: string, repo: string): Promise<{ config: CmsConfig; repoInfo: RepoInfo }> {
+  const [config, repoInfo] = await Promise.all([fetchConfig(pat, owner, repo), fetchRepoInfo(pat, owner, repo)]);
+  return { config, repoInfo };
+}

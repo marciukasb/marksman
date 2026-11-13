@@ -1,0 +1,49 @@
+@use '../../styles/variables' as *;
+
+.bar { display: flex; align-items: center; gap: 12px; }
+
+.status {
+  font-size: 0.8rem;
+  color: $color-text-muted;
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+}
+
+.live { color: #22c55e; }
+.off { color: $color-text-muted; }
+.waiting { color: $color-accent; }
+.failed { color: $color-danger; text-decoration: underline; }
+.syncing,
+.updating {
+  color: #f59e0b;
+  &::before { animation: pulse 1.2s ease-in-out infinite; }
+}
+
+.error { font-size: 0.75rem; color: $color-danger; max-width: 320px; }
+
+.syncBtn {
+  background: $color-accent;
+  color: #0f0f0f;
+  border: none;
+  border-radius: $radius;
+  padding: 7px 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+  &:not(:disabled):hover { filter: brightness(1.1); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}

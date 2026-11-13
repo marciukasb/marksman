@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { ProjectProvider } from './context/ProjectContext';
+import { WorkspaceProvider } from './context/WorkspaceContext';
 import Layout from './components/layout/Layout';
 import ProjectsPage from './pages/ProjectsPage';
 import CollectionsPage from './pages/CollectionsPage';
@@ -9,6 +10,7 @@ import PostEditorPage from './pages/PostEditorPage';
 export default function App() {
   return (
     <ProjectProvider>
+      <WorkspaceProvider>
       <HashRouter>
         <Layout>
           <Routes>
@@ -20,6 +22,7 @@ export default function App() {
           </Routes>
         </Layout>
       </HashRouter>
+      </WorkspaceProvider>
     </ProjectProvider>
   );
 }

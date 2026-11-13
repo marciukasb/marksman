@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation, useMatch } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
-import { triggerDeploy, fetchSyncStatus, fetchConfig, type SyncStatus } from '../../lib/github';
+import { openProject } from '../../lib/github';
 import { getProjects, saveProject } from '../../lib/storage';
+import SyncBar from '../sync/SyncBar';
 import type { Project } from '../../types';
 import styles from './Layout.module.scss';
 
@@ -31,11 +32,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const pageTitle = usePageTitle();
-
-  const [deploying, setDeploying] = useState(false);
-  const [deployMsg, setDeployMsg] = useState('');
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>('unknown');
-  const syncTriggeredAt = useRef<number | null>(null);
+  // Sync never appears while writing: finishing a post is Submit or Save draft
+  const inEditor = /\/(new|edit\/[^/]+)$/.test(location.pathname);
 
   const [projects, setProjects] = useState<Project[]>(getProjects);
   const [addingProject, setAddingProject] = useState(false);
@@ -45,63 +43,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const showSidebar = !!project;
 
-  const refreshStatus = useCallback(async () => {
-    if (!project || !config?.deployWorkflow) return;
-    try {
-      const status = await fetchSyncStatus(project.pat, project.owner, project.repo, config.deployWorkflow);
-      // If we recently triggered a sync and the API hasn't registered the run yet,
-      // hold amber for up to 10 minutes rather than flashing red
-      if (status === 'unsynced' && syncTriggeredAt.current !== null) {
-        const elapsed = Date.now() - syncTriggeredAt.current;
-        if (elapsed < 10 * 60 * 1000) {
-          setSyncStatus('in_progress');
-          return;
-        }
-        syncTriggeredAt.current = null;
-      }
-      if (status === 'synced' || status === 'in_progress') {
-        syncTriggeredAt.current = null;
-      }
-      setSyncStatus(status);
-    } catch {
-      setSyncStatus('unknown');
-    }
-  }, [project, config?.deployWorkflow]);
-
-  useEffect(() => {
-    if (!project || !config?.deployWorkflow) return;
-    refreshStatus();
-    const interval = setInterval(refreshStatus, 20_000);
-    return () => clearInterval(interval);
-  }, [refreshStatus]);
-
-  async function handleDeploy() {
-    if (!config?.deployWorkflow) {
-      setDeployMsg('Add "deployWorkflow" to .cms.json to enable sync.');
-      setTimeout(() => setDeployMsg(''), 5000);
-      return;
-    }
-    setDeploying(true);
-    setDeployMsg('');
-    setSyncStatus('in_progress');
-    syncTriggeredAt.current = Date.now();
-    try {
-      await triggerDeploy(project!.pat, project!.owner, project!.repo, config.deployWorkflow);
-      setDeployMsg('Sync triggered.');
-      setTimeout(() => setDeployMsg(''), 3000);
-      setTimeout(refreshStatus, 5000);
-    } catch {
-      setDeployMsg('Failed — check PAT has workflow permissions.');
-      setTimeout(() => setDeployMsg(''), 5000);
-      setSyncStatus('unknown');
-    } finally {
-      setDeploying(false);
-    }
-  }
-
   async function handleSwitchProject(p: Project) {
-    const cfg = await fetchConfig(p.pat, p.owner, p.repo);
-    setProject(p, cfg);
+    const { config: cfg, repoInfo } = await openProject(p.pat, p.owner, p.repo);
+    setProject(p, cfg, repoInfo);
     navigate(`/${p.owner}/${p.repo}`);
   }
 
@@ -111,10 +55,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     setAddError('');
     const newProject: Project = { id: generateId(), ...form };
     try {
-      const cfg = await fetchConfig(newProject.pat, newProject.owner, newProject.repo);
+      const { config: cfg, repoInfo } = await openProject(newProject.pat, newProject.owner, newProject.repo);
       saveProject(newProject);
       setProjects(getProjects());
-      setProject(newProject, cfg);
+      setProject(newProject, cfg, repoInfo);
       setAddingProject(false);
       setForm({ label: '', owner: '', repo: '', pat: '' });
       navigate(`/${newProject.owner}/${newProject.repo}`);
@@ -125,18 +69,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
   }
 
-  function handleNavItem(_colName: string, index: number) {
+  function handleNavItem(index: number) {
     const col = config!.collections[index];
     setActiveCollection(col);
     navigate(`/${project!.owner}/${project!.repo}/${encodeURIComponent(col.name)}`);
   }
-
-  const dotClass = {
-    synced: styles.dotSynced,
-    unsynced: styles.dotUnsynced,
-    in_progress: styles.dotInProgress,
-    unknown: styles.dotUnknown,
-  }[syncStatus];
 
   return (
     <div className={styles.shell}>
@@ -151,7 +88,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <button
                   key={col.name}
                   className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
-                  onClick={() => handleNavItem(col.name, i)}
+                  onClick={() => handleNavItem(i)}
                 >
                   {col.name}
                 </button>
@@ -193,15 +130,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <header className={styles.topNav}>
           <span className={styles.pageTitle}>{pageTitle}</span>
           <div className={styles.topNavRight}>
-            {deployMsg && <span className={styles.deployMsg}>{deployMsg}</span>}
-            {showSidebar && (
-              <div className={styles.syncWrap}>
-                <span className={`${styles.dot} ${dotClass}`} />
-                <button className={styles.deployBtn} onClick={handleDeploy} disabled={deploying}>
-                  {deploying ? 'Syncing…' : 'Sync'}
-                </button>
-              </div>
-            )}
+            {showSidebar && !inEditor && <SyncBar />}
           </div>
         </header>
         <div className={styles.content}>{children}</div>
