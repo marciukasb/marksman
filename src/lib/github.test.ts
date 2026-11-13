@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
-  setClientFactory, fetchRepoInfo, fetchTreeShas, commitChanges, RefMovedError, fetchDeployInfo, fetchRunForCommit,
+  setClientFactory, defaultClient, fetchRepoInfo, fetchTreeShas, commitChanges, RefMovedError, fetchDeployInfo, fetchRunForCommit,
 } from './github';
 
 const b64 = (s: string) => btoa(s);
@@ -111,5 +111,19 @@ describe('fetchRunForCommit', () => {
   it('returns null when no run exists yet', async () => {
     client.actions.listWorkflowRuns.mockResolvedValue({ data: { workflow_runs: [] } });
     expect(await fetchRunForCommit('pat', 'o', 'r', 'main.yml', 'c1')).toBeNull();
+  });
+});
+
+describe('real client', () => {
+  it('never lets the browser serve GitHub reads from its cache', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ default_branch: 'main' }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    setClientFactory(defaultClient);
+    expect(await fetchRepoInfo('pat', 'o', 'r')).toEqual({ defaultBranch: 'main' });
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ cache: 'no-store' });
+    vi.unstubAllGlobals();
   });
 });

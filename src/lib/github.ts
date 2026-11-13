@@ -1,7 +1,12 @@
 import { Octokit } from '@octokit/rest';
 import type { CmsConfig, PostFile, RepoInfo } from '../types';
 
-let clientFactory = (pat: string) => new Octokit({ auth: pat });
+// api.github.com allows 60s browser caching; Marksman must always see the repo as it is now
+const noStoreFetch: typeof fetch = (input, init) => fetch(input, { ...init, cache: 'no-store' });
+
+export const defaultClient = (pat: string) => new Octokit({ auth: pat, request: { fetch: noStoreFetch } });
+
+let clientFactory = defaultClient;
 
 // Lets tests swap in a fake Octokit
 export function setClientFactory(factory: (pat: string) => Octokit) {
